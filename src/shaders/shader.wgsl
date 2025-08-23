@@ -9,16 +9,25 @@ struct VertexOutput {
   @location(0) color: vec4<f32>,
 }
 
-@binding(0) @group(0) var<uniform> transformUBO: TransformData;
+const RADIUS: f32 = 0.1;
+
+@group(0) @binding(0) var<uniform> transformUBO: TransformData;
+@group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> velocities: array<vec4<f32>>; 
 
 @vertex
 fn vs_main(
-  @location(0) position: vec4<f32>,
+  @location(0) vertPos: vec4<f32>,
+  @builtin(instance_index) iid: u32
 ) -> VertexOutput {
-    var output: VertexOutput;
-  output.position = transformUBO.projection * transformUBO.view * transformUBO.model * vec4<f32>(position.xyz, 1.0);
-  
-  output.color = vec4<f32>(position.x, 0.0, 0.0, 1.0);
+  var output: VertexOutput;
+  let center = positions[iid];
+  let velocity = velocities[iid];
+  let worldPos = center.xyz + vertPos.xyz * RADIUS;
+  let mvp = transformUBO.projection * transformUBO.view * transformUBO.model;
+  output.position = mvp * vec4<f32>(worldPos, 1.0);
+  output.color = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+
   return output;
 }
 

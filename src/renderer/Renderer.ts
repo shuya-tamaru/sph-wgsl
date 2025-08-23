@@ -1,4 +1,6 @@
 import { SphereInstance } from "../core/SphereInstance";
+import { SphereTransform } from "../core/SphereTransform";
+import { debugReadBuffer } from "../utils/debugReadBuffer";
 import { OrbitControls } from "./OrbitControls";
 import { RenderPipeline } from "./RenderPipeline";
 import { RenderTarget } from "./RenderTarget";
@@ -14,16 +16,43 @@ export class Renderer {
   setupDevice: SetupDevice;
   renderTarget: RenderTarget;
   renderPipeline: RenderPipeline;
-  orbitControls: OrbitControls;
-  transformSystem: TransformSystem;
 
+  transformSystem: TransformSystem;
+  orbitControls: OrbitControls;
   sphereInstance: SphereInstance;
+  sphereTransform: SphereTransform;
 
   timestamp: number;
+  cameraParams: {
+    fov: number;
+    aspect: number;
+    near: number;
+    far: number;
+    distance: number;
+  };
+  sphereTransformParams: {
+    boxWidth: number;
+    boxHeight: number;
+    boxDepth: number;
+    sphereCount: number;
+  };
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.timestamp = 0;
+    this.cameraParams = {
+      fov: Math.PI / 2,
+      aspect: 1,
+      near: 0.1,
+      far: 500,
+      distance: 15,
+    };
+    this.sphereTransformParams = {
+      boxWidth: 10,
+      boxHeight: 10,
+      boxDepth: 10,
+      sphereCount: 1000,
+    };
   }
 
   async init() {
@@ -33,12 +62,13 @@ export class Renderer {
     this.renderTarget = new RenderTarget(this.device, this.canvas);
 
     this.createTransformData();
-    this.createSphereAssets();
+    this.createAssets();
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
       this.device,
       this.setupDevice.format,
-      this.transformSystem.getBuffer()
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
     );
     this.renderPipeline.init();
 
@@ -51,14 +81,24 @@ export class Renderer {
   private handleResize() {
     this.renderTarget.updateCanvasSize();
     const aspect = this.canvas.width / this.canvas.height;
-    this.transformSystem.setPerspective(Math.PI / 2, aspect, 0.1, 500);
+    this.transformSystem.setPerspective(
+      this.cameraParams.fov,
+      aspect,
+      this.cameraParams.near,
+      this.cameraParams.far
+    );
     this.transformSystem.update();
   }
 
   createTransformData() {
     this.transformSystem = new TransformSystem(this.device);
     const aspect = this.canvas.width / this.canvas.height;
-    this.transformSystem.setPerspective(Math.PI / 2, aspect, 0.1, 500);
+    this.transformSystem.setPerspective(
+      this.cameraParams.fov,
+      aspect,
+      this.cameraParams.near,
+      this.cameraParams.far
+    );
     this.transformSystem.update();
   }
 
@@ -69,9 +109,19 @@ export class Renderer {
     this.context = this.setupDevice.context;
   }
 
-  createSphereAssets() {
+  createAssets() {
+    this.orbitControls = new OrbitControls(
+      this.canvas,
+      this.cameraParams.distance
+    );
     this.sphereInstance = new SphereInstance(this.device);
-    this.orbitControls = new OrbitControls(this.canvas, 5);
+    this.sphereTransform = new SphereTransform(
+      this.device,
+      this.sphereTransformParams.boxWidth,
+      this.sphereTransformParams.boxHeight,
+      this.sphereTransformParams.boxDepth,
+      this.sphereTransformParams.sphereCount
+    );
   }
 
   render = (timestamp: number) => {
@@ -94,5 +144,22 @@ export class Renderer {
 
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.render);
+
+    // if (Math.round(this.timestamp) % 60 === 0) {
+    //   this.device.queue
+    //     .onSubmittedWorkDone()
+    //     .then(() => this.debug(this.device, this.sphereTransform));
+    // }
   };
+
+  async debug(device: GPUDevice, p: SphereTransform) {
+    const result = await debugReadBuffer(
+      this.device,
+      this.sphereTransform.positionBuffer,
+      this.sphereTransform.sphereCount * 4 * 4
+    );
+
+    const float32View = new Float32Array(result);
+    console.log(float32View);
+  }
 }
