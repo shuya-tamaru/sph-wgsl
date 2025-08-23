@@ -6,6 +6,7 @@ import { PressureForce } from "../core/PressureForce";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
 import { SphSettings } from "../core/SphSettings";
+import { Viscosity } from "../core/Viscosity";
 import { debugReadBuffer } from "../utils/debugReadBuffer";
 import { TimeStep } from "../utils/TimeStep";
 import { OrbitControls } from "./OrbitControls";
@@ -34,6 +35,7 @@ export class Renderer {
   density: Density;
   pressure: Pressure;
   pressureForce: PressureForce;
+  viscosity: Viscosity;
   integrate: Integrate;
 
   timestamp: TimeStep;
@@ -100,6 +102,12 @@ export class Renderer {
       this.density.getDensityBuffer(),
       this.pressure.getPressureBuffer(),
       this.sphSettings
+    );
+    this.viscosity = new Viscosity(
+      this.device,
+      this.sphereTransform,
+      this.sphSettings,
+      this.density.getDensityBuffer()
     );
     this.integrate = new Integrate(
       this.device,
@@ -186,6 +194,7 @@ export class Renderer {
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
     this.pressureForce.buildIndex(commandEncoder);
+    this.viscosity.buildIndex(commandEncoder);
     this.integrate.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
@@ -203,13 +212,13 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.pressureForce));
+    //   .then(() => this.debug(this.device, this.viscosity));
   };
 
-  async debug(device: GPUDevice, p: PressureForce) {
+  async debug(device: GPUDevice, p: Viscosity) {
     const result = await debugReadBuffer(
       this.device,
-      this.pressureForce.getPressureForceBuffer(),
+      this.viscosity.getViscosityBuffer(),
       this.sphereTransform.sphereCount * 4 * 4
     );
 

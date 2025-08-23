@@ -10,7 +10,6 @@ export class SphSettings {
   private viscosity: number;
   private restDensity: number;
   private mass: number;
-  private smoothingRadius: number;
   private pressureStiffness: number;
   private viscosityMu: number;
   private tangentDamping: number;
@@ -19,6 +18,7 @@ export class SphSettings {
   public densityParamsBuffer: GPUBuffer;
   public pressureParamsBuffer: GPUBuffer;
   public pressureForceParamsBuffer: GPUBuffer;
+  public viscosityParamsBuffer: GPUBuffer;
   public integrateParamsBuffer: GPUBuffer;
 
   constructor(device: GPUDevice) {
@@ -29,14 +29,15 @@ export class SphSettings {
     this.h6 = this.h3 * this.h3;
     this.h9 = this.h3 * this.h3 * this.h3;
     this.poly6 = 315 / (64 * Math.PI * this.h9);
-    this.spiky = -45 / (Math.PI * this.h6);
-    this.viscosity = 45 / (Math.PI * this.h2);
+    this.spiky = 45 / (Math.PI * this.h6);
+    this.viscosity = 45 / (Math.PI * this.h6);
     this.mass = 1.0;
     this.restDensity = 0.1;
     this.pressureStiffness = 1.0;
     this.viscosityMu = 1.0;
     this.tangentDamping = 0.1;
     this.restitution = 0.1;
+    this.viscosityMu = 0.1;
 
     this.init();
   }
@@ -92,6 +93,22 @@ export class SphSettings {
       this.pressureForceParamsBuffer,
       0,
       pressureForceParams
+    );
+
+    this.viscosityParamsBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const viscosityParams = new ArrayBuffer(16);
+    const f32View_viscosity = new Float32Array(viscosityParams);
+    f32View_viscosity[0] = this.viscosityMu;
+    f32View_viscosity[1] = this.viscosity;
+    f32View_viscosity[2] = this.h;
+    f32View_viscosity[3] = this.mass;
+    this.device.queue.writeBuffer(
+      this.viscosityParamsBuffer,
+      0,
+      viscosityParams
     );
 
     this.integrateParamsBuffer = this.device.createBuffer({
