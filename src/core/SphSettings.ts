@@ -13,10 +13,13 @@ export class SphSettings {
   private smoothingRadius: number;
   private pressureStiffness: number;
   private viscosityMu: number;
+  private tangentDamping: number;
+  private restitution: number;
 
   public densityParamsBuffer: GPUBuffer;
   public pressureParamsBuffer: GPUBuffer;
   public pressureForceParamsBuffer: GPUBuffer;
+  public integrateParamsBuffer: GPUBuffer;
 
   constructor(device: GPUDevice) {
     this.device = device;
@@ -32,6 +35,8 @@ export class SphSettings {
     this.restDensity = 0.1;
     this.pressureStiffness = 1.0;
     this.viscosityMu = 1.0;
+    this.tangentDamping = 0.1;
+    this.restitution = 0.1;
 
     this.init();
   }
@@ -88,13 +93,21 @@ export class SphSettings {
       0,
       pressureForceParams
     );
-  }
 
-  getDensityParamsBuffer() {
-    return this.densityParamsBuffer;
-  }
-
-  getPressureParamsBuffer() {
-    return this.pressureParamsBuffer;
+    this.integrateParamsBuffer = this.device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const integrateParams = new ArrayBuffer(16);
+    const f32View_integrate = new Float32Array(integrateParams);
+    f32View_integrate[0] = this.tangentDamping;
+    f32View_integrate[1] = this.restitution;
+    f32View_integrate[2] = this.mass;
+    f32View_integrate[3] = 0;
+    this.device.queue.writeBuffer(
+      this.integrateParamsBuffer,
+      0,
+      integrateParams
+    );
   }
 }

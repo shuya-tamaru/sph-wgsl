@@ -1,5 +1,6 @@
 import { Density } from "../core/Density";
 import { Gravity } from "../core/Gravity";
+import { Integrate } from "../core/Integrate";
 import { Pressure } from "../core/Pressure";
 import { PressureForce } from "../core/PressureForce";
 import { SphereInstance } from "../core/SphereInstance";
@@ -33,6 +34,7 @@ export class Renderer {
   density: Density;
   pressure: Pressure;
   pressureForce: PressureForce;
+  integrate: Integrate;
 
   timestamp: TimeStep;
   cameraParams: {
@@ -98,6 +100,13 @@ export class Renderer {
       this.density.getDensityBuffer(),
       this.pressure.getPressureBuffer(),
       this.sphSettings
+    );
+    this.integrate = new Integrate(
+      this.device,
+      this.sphereTransform,
+      this.sphSettings,
+      this.pressureForce,
+      this.timestamp
     );
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
@@ -177,6 +186,7 @@ export class Renderer {
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
     this.pressureForce.buildIndex(commandEncoder);
+    this.integrate.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
