@@ -1,5 +1,6 @@
 import { Density } from "../core/Density";
 import { Gravity } from "../core/Gravity";
+import { Pressure } from "../core/Pressure";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
 import { SphSettings } from "../core/SphSettings";
@@ -29,6 +30,7 @@ export class Renderer {
   sphSettings: SphSettings;
   gravity: Gravity;
   density: Density;
+  pressure: Pressure;
 
   timestamp: TimeStep;
   cameraParams: {
@@ -81,6 +83,12 @@ export class Renderer {
       this.device,
       this.sphereTransform,
       this.sphSettings
+    );
+    this.pressure = new Pressure(
+      this.device,
+      this.sphereTransform,
+      this.sphSettings,
+      this.density.getDensityBuffer()
     );
 
     // Create and initialize render pipeline
@@ -157,6 +165,7 @@ export class Renderer {
       this.device.createCommandEncoder();
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
+    this.pressure.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
@@ -173,13 +182,13 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.density));
+    //   .then(() => this.debug(this.device, this.pressure));
   };
 
-  async debug(device: GPUDevice, p: Density) {
+  async debug(device: GPUDevice, p: Pressure) {
     const result = await debugReadBuffer(
       this.device,
-      this.density.getDensityBuffer(),
+      this.pressure.getPressureBuffer(),
       this.sphereTransform.sphereCount * 4
     );
 

@@ -1,12 +1,13 @@
 import { SphereTransform } from "./SphereTransform";
-import densityShader from "../shaders/density.wgsl";
 import { SphSettings } from "./SphSettings";
+import pressureShader from "../shaders/pressure.wgsl";
 
-export class Density {
+export class Pressure {
   private device: GPUDevice;
   private sphereTransform: SphereTransform;
-  private densityBuffer: GPUBuffer;
   private sphSettings: SphSettings;
+  private pressureBuffer: GPUBuffer;
+  private densityBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
   private bindGroup: GPUBindGroup;
@@ -14,21 +15,23 @@ export class Density {
   constructor(
     device: GPUDevice,
     sphereTransform: SphereTransform,
-    sphSettings: SphSettings
+    sphSettings: SphSettings,
+    densityBuffer: GPUBuffer
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.sphSettings = sphSettings;
+    this.densityBuffer = densityBuffer;
     this.init();
   }
 
   private init() {
     const module = this.device.createShaderModule({
-      code: densityShader,
+      code: pressureShader,
     });
 
-    this.densityBuffer = this.device.createBuffer({
-      size: this.sphereTransform.sphereCount * 4,
+    this.pressureBuffer = this.device.createBuffer({
+      size: this.sphereTransform.sphereCount * 4, // 1パーティクルあたりfloat1つ (4バイト)
       usage:
         GPUBufferUsage.STORAGE |
         GPUBufferUsage.COPY_DST |
@@ -40,12 +43,12 @@ export class Density {
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBuffer
+          buffer: { type: "read-only-storage" }, // positionsBuffer
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // densityBuffer
+          buffer: { type: "read-only-storage" }, // densityBuffer
         },
         {
           binding: 2,
@@ -55,7 +58,12 @@ export class Density {
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // sphSettings
+          buffer: { type: "uniform" }, // pressureParams
+        },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }, // pressureBuffer
         },
       ],
     });
@@ -84,7 +92,11 @@ export class Density {
         },
         {
           binding: 3,
-          resource: { buffer: this.sphSettings.densityParamsBuffer },
+          resource: { buffer: this.sphSettings.pressureParamsBuffer },
+        },
+        {
+          binding: 4,
+          resource: { buffer: this.pressureBuffer },
         },
       ],
     });
@@ -98,7 +110,7 @@ export class Density {
     pass.end();
   }
 
-  getDensityBuffer() {
-    return this.densityBuffer;
+  getPressureBuffer() {
+    return this.pressureBuffer;
   }
 }
