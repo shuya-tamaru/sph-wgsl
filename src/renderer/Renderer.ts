@@ -1,6 +1,8 @@
+import { Gravity } from "../core/Gravity";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
 import { debugReadBuffer } from "../utils/debugReadBuffer";
+import { TimeStep } from "../utils/TimeStep";
 import { OrbitControls } from "./OrbitControls";
 import { RenderPipeline } from "./RenderPipeline";
 import { RenderTarget } from "./RenderTarget";
@@ -22,7 +24,9 @@ export class Renderer {
   sphereInstance: SphereInstance;
   sphereTransform: SphereTransform;
 
-  timestamp: number;
+  gravity: Gravity;
+
+  timestamp: TimeStep;
   cameraParams: {
     fov: number;
     aspect: number;
@@ -39,7 +43,6 @@ export class Renderer {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.timestamp = 0;
     this.cameraParams = {
       fov: Math.PI / 2,
       aspect: 1,
@@ -51,7 +54,7 @@ export class Renderer {
       boxWidth: 10,
       boxHeight: 10,
       boxDepth: 10,
-      sphereCount: 1000,
+      sphereCount: 100,
     };
   }
 
@@ -60,9 +63,15 @@ export class Renderer {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
     this.renderTarget = new RenderTarget(this.device, this.canvas);
+    this.timestamp = new TimeStep(this.device);
 
     this.createTransformData();
     this.createAssets();
+    this.gravity = new Gravity(
+      this.device,
+      this.sphereTransform,
+      this.timestamp.getBuffer()
+    );
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
       this.device,
@@ -75,7 +84,7 @@ export class Renderer {
     // Add resize handler
     window.addEventListener("resize", this.handleResize.bind(this));
 
-    this.render(0);
+    this.render();
   }
 
   private handleResize() {
@@ -124,7 +133,10 @@ export class Renderer {
     );
   }
 
-  render = (timestamp: number) => {
+  render = () => {
+    const dt = 0.016;
+    this.timestamp.set(dt);
+
     this.orbitControls.updateCamera();
     const view = this.orbitControls.getViewMatrix();
     this.transformSystem.setView(view);
@@ -132,6 +144,7 @@ export class Renderer {
 
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
+    this.gravity.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
