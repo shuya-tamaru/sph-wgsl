@@ -27,7 +27,7 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return; 
   }
 
-  let density = densities[index];
-  let pressure = pressureParams.pressureStiffness * (density - pressureParams.restDensity);
-  pressures[index] = max(pressure, 0.0);
+  let rho = max(densities[index], 1e-8);
+  let p = pressureParams.pressureStiffness * (rho - pressureParams.restDensity);
+  pressures[index] = max(p, 0.0);
 }

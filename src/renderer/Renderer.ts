@@ -63,10 +63,10 @@ export class Renderer {
       distance: 15,
     };
     this.sphereTransformParams = {
-      boxWidth: 10,
-      boxHeight: 5,
-      boxDepth: 10,
-      sphereCount: 1000,
+      boxWidth: 16,
+      boxHeight: 8,
+      boxDepth: 4,
+      sphereCount: 4000,
     };
   }
 
@@ -76,7 +76,7 @@ export class Renderer {
     this.canvas.height = window.innerHeight;
     this.renderTarget = new RenderTarget(this.device, this.canvas);
     this.timestamp = new TimeStep(this.device);
-    this.sphSettings = new SphSettings(this.device);
+    this.sphSettings = new SphSettings(this.device, this.sphereTransformParams);
 
     this.createTransformData();
     this.createAssets();
@@ -179,7 +179,7 @@ export class Renderer {
   }
 
   render = () => {
-    const dt = 0.016;
+    const dt = 0.002;
     this.timestamp.set(dt);
 
     this.orbitControls.updateCamera();

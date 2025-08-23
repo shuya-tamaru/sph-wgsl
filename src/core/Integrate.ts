@@ -3,6 +3,7 @@ import { PressureForce } from "./PressureForce";
 import { SphereTransform } from "./SphereTransform";
 import { SphSettings } from "./SphSettings";
 import integrateShader from "../shaders/integrate.wgsl";
+import integrateShader2 from "../shaders/integrate2.wgsl";
 import { Viscosity } from "./Viscosity";
 
 export class Integrate {
@@ -35,7 +36,8 @@ export class Integrate {
 
   private init() {
     const module = this.device.createShaderModule({
-      code: integrateShader,
+      // code: integrateShader,
+      code: integrateShader2,
     });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
@@ -58,7 +60,7 @@ export class Integrate {
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // viscositiesBuffer
+          buffer: { type: "read-only-storage" }, // viscositiesBuffer
         },
         {
           binding: 4,

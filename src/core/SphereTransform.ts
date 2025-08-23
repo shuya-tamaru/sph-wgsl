@@ -45,9 +45,11 @@ export class SphereTransform {
     this.velocities = new Float32Array(this.sphereCount * 4);
 
     for (let i = 0; i < this.sphereCount; i++) {
-      // box中心を原点とし、各軸[-box/2, box/2]の範囲でランダム配置
+      // 高さ方向の初期位置はBoxの下面から中間前の範囲
       this.positions[i * 4 + 0] = (Math.random() - 0.5) * this.boxWidth;
       this.positions[i * 4 + 1] = (Math.random() - 0.5) * this.boxHeight;
+      // this.positions[i * 4 + 1] =
+      //   -0.5 * this.boxHeight + Math.random() * (0.5 * this.boxHeight);
       this.positions[i * 4 + 2] = (Math.random() - 0.5) * this.boxDepth;
       this.positions[i * 4 + 3] = 0.0; // w成分
     }

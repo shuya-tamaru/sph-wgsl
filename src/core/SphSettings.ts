@@ -21,23 +21,30 @@ export class SphSettings {
   public viscosityParamsBuffer: GPUBuffer;
   public integrateParamsBuffer: GPUBuffer;
 
-  constructor(device: GPUDevice) {
+  constructor(
+    device: GPUDevice,
+    sphereTransformParams: {
+      boxWidth: number;
+      boxHeight: number;
+      boxDepth: number;
+      sphereCount: number;
+    }
+  ) {
     this.device = device;
-    this.h = 2.5;
+    this.h = 1.8;
     this.h2 = this.h * this.h;
     this.h3 = this.h * this.h2;
     this.h6 = this.h3 * this.h3;
     this.h9 = this.h3 * this.h3 * this.h3;
     this.poly6 = 315 / (64 * Math.PI * this.h9);
-    this.spiky = 45 / (Math.PI * this.h6);
+    this.spiky = -45 / (Math.PI * this.h6);
     this.viscosity = 45 / (Math.PI * this.h6);
-    this.mass = 2.0;
-    this.restDensity = 0.1;
-    this.pressureStiffness = 0.8;
-    this.viscosityMu = 0.1;
+    this.mass = 0.5;
+    this.restDensity = 0.8;
+    this.pressureStiffness = 8000;
+    this.viscosityMu = 0.12;
     this.tangentDamping = 0.1;
     this.restitution = 0.1;
-    this.viscosityMu = 0.1;
 
     this.init();
   }

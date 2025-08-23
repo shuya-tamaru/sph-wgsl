@@ -40,7 +40,7 @@ export class Density {
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBuffer
+          buffer: { type: "read-only-storage" }, // positionsBuffer
         },
         {
           binding: 1,
