@@ -9,7 +9,7 @@ struct VertexOutput {
   @location(0) color: vec4<f32>,
 }
 
-const RADIUS: f32 = 0.1;
+const RADIUS: f32 = 0.2;
 
 @group(0) @binding(0) var<uniform> transformUBO: TransformData;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;

@@ -64,7 +64,7 @@ export class Renderer {
     };
     this.sphereTransformParams = {
       boxWidth: 10,
-      boxHeight: 10,
+      boxHeight: 5,
       boxDepth: 10,
       sphereCount: 1000,
     };
@@ -114,6 +114,7 @@ export class Renderer {
       this.sphereTransform,
       this.sphSettings,
       this.pressureForce,
+      this.viscosity,
       this.timestamp
     );
     // Create and initialize render pipeline

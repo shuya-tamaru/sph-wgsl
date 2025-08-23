@@ -23,7 +23,7 @@ export class SphSettings {
 
   constructor(device: GPUDevice) {
     this.device = device;
-    this.h = 3.0;
+    this.h = 2.5;
     this.h2 = this.h * this.h;
     this.h3 = this.h * this.h2;
     this.h6 = this.h3 * this.h3;
@@ -31,10 +31,10 @@ export class SphSettings {
     this.poly6 = 315 / (64 * Math.PI * this.h9);
     this.spiky = 45 / (Math.PI * this.h6);
     this.viscosity = 45 / (Math.PI * this.h6);
-    this.mass = 1.0;
+    this.mass = 2.0;
     this.restDensity = 0.1;
-    this.pressureStiffness = 1.0;
-    this.viscosityMu = 1.0;
+    this.pressureStiffness = 0.8;
+    this.viscosityMu = 0.1;
     this.tangentDamping = 0.1;
     this.restitution = 0.1;
     this.viscosityMu = 0.1;

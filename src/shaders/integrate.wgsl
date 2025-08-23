@@ -36,7 +36,7 @@ const GRAVITY: f32 = 9.8;
 @group(0) @binding(0) var<storage, read_write> positions: array<vec4<f32>>;
 @group(0) @binding(1) var<storage, read_write> velocities: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> pressureForces: array<vec4<f32>>;
-// viscosity
+@group(0) @binding(3) var<storage, read_write> viscosities: array<vec4<f32>>;
 @group(0) @binding(4) var<uniform> transformParams: TransformParams;
 @group(0) @binding(5) var<uniform> integrateParams: IntegrateParams;
 @group(0) @binding(6) var<uniform> timeStep: TimeStep;
@@ -52,8 +52,9 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var pos_i = positions[i].xyz;
   var vel_i = velocities[i].xyz;
   var force_i = pressureForces[i].xyz;
+  var viscosity_i = viscosities[i].xyz;
   let gravity = vec3<f32>(0.0, -GRAVITY, 0.0);
-  let a = (force_i + gravity) / integrateParams.mass;
+  let a = (force_i + gravity + viscosity_i) / integrateParams.mass;
 
   var new_vel_i = vel_i + a * timeStep.dt;
   var new_pos_i = pos_i + new_vel_i * timeStep.dt;

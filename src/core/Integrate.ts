@@ -3,12 +3,14 @@ import { PressureForce } from "./PressureForce";
 import { SphereTransform } from "./SphereTransform";
 import { SphSettings } from "./SphSettings";
 import integrateShader from "../shaders/integrate.wgsl";
+import { Viscosity } from "./Viscosity";
 
 export class Integrate {
   private device: GPUDevice;
   private sphereTransform: SphereTransform;
   private sphSettings: SphSettings;
   private pressureForce: PressureForce;
+  private viscosity: Viscosity;
   private timestamp: TimeStep;
 
   private pipeline: GPUComputePipeline;
@@ -19,12 +21,14 @@ export class Integrate {
     sphereTransform: SphereTransform,
     sphSettings: SphSettings,
     pressureForce: PressureForce,
+    viscosity: Viscosity,
     timestamp: TimeStep
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.sphSettings = sphSettings;
     this.pressureForce = pressureForce;
+    this.viscosity = viscosity;
     this.timestamp = timestamp;
     this.init();
   }
@@ -51,11 +55,11 @@ export class Integrate {
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "read-only-storage" }, // pressureForces
         },
-        // {
-        //   binding: 3,
-        //   visibility: GPUShaderStage.COMPUTE,
-        //   buffer: { type: "storage" }, // viscositiesBuffer
-        // },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }, // viscositiesBuffer
+        },
         {
           binding: 4,
           visibility: GPUShaderStage.COMPUTE,
@@ -87,7 +91,7 @@ export class Integrate {
         { binding: 0, resource: this.sphereTransform.positionBuffer },
         { binding: 1, resource: this.sphereTransform.velocityBuffer },
         { binding: 2, resource: this.pressureForce.getPressureForceBuffer() },
-        // { binding: 3, resource: this.particles.viscosityBuffer },
+        { binding: 3, resource: this.viscosity.getViscosityBuffer() },
         { binding: 4, resource: this.sphereTransform.transformParamsBuffer },
         { binding: 5, resource: this.sphSettings.integrateParamsBuffer },
         { binding: 6, resource: this.timestamp.getBuffer() },
