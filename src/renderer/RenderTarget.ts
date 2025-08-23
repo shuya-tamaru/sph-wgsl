@@ -4,7 +4,7 @@ export class RenderTarget {
 
   private depth: GPUTexture;
   private depthView: GPUTextureView;
-  private clear = { r: 0, g: 0, b: 0, a: 1 };
+  private clear = { r: 1, g: 1, b: 1, a: 1 };
 
   constructor(device: GPUDevice, canvas: HTMLCanvasElement) {
     this.device = device;

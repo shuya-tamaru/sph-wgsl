@@ -16,6 +16,7 @@ struct TransformParams {
 @group(0) @binding(1) var<storage, read_write> velocities: array<vec4<f32>>; 
 @group(0) @binding(2) var<uniform> timeStep: TimeStep;
 @group(0) @binding(3) var<uniform> transformParams: TransformParams;
+@group(0) @binding(4) var<storage, read_write> gravities: array<vec4<f32>>;
 
 const GRAVITY: f32 = 9.8;
 const COLLISION_DAMPING: f32 = 0.9;

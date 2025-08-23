@@ -1,6 +1,8 @@
+import { Density } from "../core/Density";
 import { Gravity } from "../core/Gravity";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
+import { SphSettings } from "../core/SphSettings";
 import { debugReadBuffer } from "../utils/debugReadBuffer";
 import { TimeStep } from "../utils/TimeStep";
 import { OrbitControls } from "./OrbitControls";
@@ -24,7 +26,9 @@ export class Renderer {
   sphereInstance: SphereInstance;
   sphereTransform: SphereTransform;
 
+  sphSettings: SphSettings;
   gravity: Gravity;
+  density: Density;
 
   timestamp: TimeStep;
   cameraParams: {
@@ -54,7 +58,7 @@ export class Renderer {
       boxWidth: 10,
       boxHeight: 10,
       boxDepth: 10,
-      sphereCount: 100,
+      sphereCount: 1000,
     };
   }
 
@@ -64,6 +68,7 @@ export class Renderer {
     this.canvas.height = window.innerHeight;
     this.renderTarget = new RenderTarget(this.device, this.canvas);
     this.timestamp = new TimeStep(this.device);
+    this.sphSettings = new SphSettings(this.device);
 
     this.createTransformData();
     this.createAssets();
@@ -72,6 +77,12 @@ export class Renderer {
       this.sphereTransform,
       this.timestamp.getBuffer()
     );
+    this.density = new Density(
+      this.device,
+      this.sphereTransform,
+      this.sphSettings
+    );
+
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
       this.device,
@@ -145,6 +156,7 @@ export class Renderer {
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
     this.gravity.buildIndex(commandEncoder);
+    this.density.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
@@ -158,18 +170,17 @@ export class Renderer {
     this.device.queue.submit([commandEncoder.finish()]);
     requestAnimationFrame(this.render);
 
-    // if (Math.round(this.timestamp) % 60 === 0) {
-    //   this.device.queue
-    //     .onSubmittedWorkDone()
-    //     .then(() => this.debug(this.device, this.sphereTransform));
-    // }
+    //debug
+    // this.device.queue
+    //   .onSubmittedWorkDone()
+    //   .then(() => this.debug(this.device, this.density));
   };
 
-  async debug(device: GPUDevice, p: SphereTransform) {
+  async debug(device: GPUDevice, p: Density) {
     const result = await debugReadBuffer(
       this.device,
-      this.sphereTransform.positionBuffer,
-      this.sphereTransform.sphereCount * 4 * 4
+      this.density.getDensityBuffer(),
+      this.sphereTransform.sphereCount * 4
     );
 
     const float32View = new Float32Array(result);
