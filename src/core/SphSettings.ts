@@ -3,6 +3,7 @@ export class SphSettings {
   private h: number;
   private h2: number;
   private h3: number;
+  private h6: number;
   private h9: number;
   private poly6: number;
   private spiky: number;
@@ -15,15 +16,17 @@ export class SphSettings {
 
   public densityParamsBuffer: GPUBuffer;
   public pressureParamsBuffer: GPUBuffer;
+  public pressureForceParamsBuffer: GPUBuffer;
 
   constructor(device: GPUDevice) {
     this.device = device;
     this.h = 3.0;
     this.h2 = this.h * this.h;
     this.h3 = this.h * this.h2;
+    this.h6 = this.h3 * this.h3;
     this.h9 = this.h3 * this.h3 * this.h3;
     this.poly6 = 315 / (64 * Math.PI * this.h9);
-    this.spiky = -45 / (Math.PI * this.h3);
+    this.spiky = -45 / (Math.PI * this.h6);
     this.viscosity = 45 / (Math.PI * this.h2);
     this.mass = 1.0;
     this.restDensity = 0.1;
@@ -64,6 +67,27 @@ export class SphSettings {
     f32View_pressure[2] = 0;
     f32View_pressure[3] = 0;
     this.device.queue.writeBuffer(this.pressureParamsBuffer, 0, pressureParams);
+
+    this.pressureForceParamsBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const pressureForceParams = new ArrayBuffer(32);
+    const f32View_pressureForce = new Float32Array(pressureForceParams);
+    f32View_pressureForce[0] = this.h;
+    f32View_pressureForce[1] = this.h2;
+    f32View_pressureForce[2] = this.spiky;
+    f32View_pressureForce[3] = this.mass;
+    f32View_pressureForce[4] = this.restDensity;
+    f32View_pressureForce[5] = 0;
+    f32View_pressureForce[6] = 0;
+    f32View_pressureForce[7] = 0;
+
+    this.device.queue.writeBuffer(
+      this.pressureForceParamsBuffer,
+      0,
+      pressureForceParams
+    );
   }
 
   getDensityParamsBuffer() {

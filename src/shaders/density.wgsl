@@ -35,6 +35,7 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (i == index) { continue; }
     let dp = p - positions[i].xyz;
     let r2 = dot(dp, dp);
+    //tはh^2-r^2
     let t  = max(0.0, densityParams.h2 - r2);
     let t2   = t * t;
     let t3   = t2 * t;

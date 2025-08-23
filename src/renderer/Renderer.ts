@@ -1,6 +1,7 @@
 import { Density } from "../core/Density";
 import { Gravity } from "../core/Gravity";
 import { Pressure } from "../core/Pressure";
+import { PressureForce } from "../core/PressureForce";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
 import { SphSettings } from "../core/SphSettings";
@@ -31,6 +32,7 @@ export class Renderer {
   gravity: Gravity;
   density: Density;
   pressure: Pressure;
+  pressureForce: PressureForce;
 
   timestamp: TimeStep;
   cameraParams: {
@@ -90,7 +92,13 @@ export class Renderer {
       this.sphSettings,
       this.density.getDensityBuffer()
     );
-
+    this.pressureForce = new PressureForce(
+      this.device,
+      this.sphereTransform,
+      this.density.getDensityBuffer(),
+      this.pressure.getPressureBuffer(),
+      this.sphSettings
+    );
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
       this.device,
@@ -163,9 +171,12 @@ export class Renderer {
 
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
+
+    //compute sph
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
+    this.pressureForce.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
@@ -182,14 +193,14 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.pressure));
+    //   .then(() => this.debug(this.device, this.pressureForce));
   };
 
-  async debug(device: GPUDevice, p: Pressure) {
+  async debug(device: GPUDevice, p: PressureForce) {
     const result = await debugReadBuffer(
       this.device,
-      this.pressure.getPressureBuffer(),
-      this.sphereTransform.sphereCount * 4
+      this.pressureForce.getPressureForceBuffer(),
+      this.sphereTransform.sphereCount * 4 * 4
     );
 
     const float32View = new Float32Array(result);
