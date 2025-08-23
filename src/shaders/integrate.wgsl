@@ -31,6 +31,8 @@ fn handleBoundaryCollision(
   return (-vn * params.restitution) + vt * (1.0 - params.tangentDamping);
 }
 
+const GRAVITY: f32 = 9.8;
+
 @group(0) @binding(0) var<storage, read_write> positions: array<vec4<f32>>;
 @group(0) @binding(1) var<storage, read_write> velocities: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> pressureForces: array<vec4<f32>>;
@@ -50,7 +52,8 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var pos_i = positions[i].xyz;
   var vel_i = velocities[i].xyz;
   var force_i = pressureForces[i].xyz;
-  let a = force_i / integrateParams.mass;
+  let gravity = vec3<f32>(0.0, -GRAVITY, 0.0);
+  let a = (force_i + gravity) / integrateParams.mass;
 
   var new_vel_i = vel_i + a * timeStep.dt;
   var new_pos_i = pos_i + new_vel_i * timeStep.dt;

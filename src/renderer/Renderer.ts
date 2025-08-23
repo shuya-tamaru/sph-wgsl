@@ -182,7 +182,7 @@ export class Renderer {
       this.device.createCommandEncoder();
 
     //compute sph
-    this.gravity.buildIndex(commandEncoder);
+    // this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
     this.pressureForce.buildIndex(commandEncoder);
