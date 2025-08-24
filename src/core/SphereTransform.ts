@@ -112,4 +112,13 @@ export class SphereTransform {
 
     this.device.queue.writeBuffer(this.transformParamsBuffer, 0, buf);
   }
+
+  updateSphereCount(count: number) {
+    this.sphereCount = count;
+    this.positions = new Float32Array(this.sphereCount * 4);
+    this.velocities = new Float32Array(this.sphereCount * 4);
+    this.colors = new Float32Array(this.sphereCount * 4);
+    this.createTransformData();
+    this.createBuffer();
+  }
 }

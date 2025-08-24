@@ -75,12 +75,21 @@ export class Renderer {
 
   async init() {
     this.gui = new GUI();
+
     this.gui
-      .add(this.sphereTransformParams, "boxWidth", 1, 32, 1)
+      .add(this.sphereTransformParams, "boxWidth", 16, 32, 1)
       .name("Box Width")
       .onChange((v: number) => {
         this.sphereTransformParams.boxWidth = v;
         this.sphereTransform.updateBoxUBO(this.sphereTransformParams.boxWidth);
+      });
+    this.gui
+      .add(this.sphereTransformParams, "sphereCount", 5000, 10000, 5000)
+      .name("Sphere Count")
+      .onChange((v: number) => {
+        this.sphereTransformParams.sphereCount = v;
+        // 球体数を変更したらシミュレーションをリセット
+        this.resetSimulation();
       });
 
     await this.createDevice();
@@ -92,6 +101,23 @@ export class Renderer {
 
     this.createTransformData();
     this.createAssets();
+    this.createSphInstance();
+    // Create and initialize render pipeline
+    this.renderPipeline = new RenderPipeline(
+      this.device,
+      this.setupDevice.format,
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
+    );
+    this.renderPipeline.init();
+
+    // Add resize handler
+    window.addEventListener("resize", this.handleResize.bind(this));
+
+    this.render();
+  }
+
+  private createSphInstance() {
     this.gravity = new Gravity(
       this.device,
       this.sphereTransform,
@@ -129,19 +155,6 @@ export class Renderer {
       this.viscosity,
       this.timestamp
     );
-    // Create and initialize render pipeline
-    this.renderPipeline = new RenderPipeline(
-      this.device,
-      this.setupDevice.format,
-      this.transformSystem.getBuffer(),
-      this.sphereTransform
-    );
-    this.renderPipeline.init();
-
-    // Add resize handler
-    window.addEventListener("resize", this.handleResize.bind(this));
-
-    this.render();
   }
 
   private handleResize() {
@@ -154,6 +167,33 @@ export class Renderer {
       this.cameraParams.far
     );
     this.transformSystem.update();
+  }
+
+  private resetSimulation() {
+    // 既存のSPHコンポーネントを破棄
+    if (this.sphereTransform) {
+      // 新しい球体数でSphereTransformを再作成
+      this.sphereTransform = new SphereTransform(
+        this.device,
+        this.sphereTransformParams.boxWidth,
+        this.sphereTransformParams.boxHeight,
+        this.sphereTransformParams.boxDepth,
+        this.sphereTransformParams.sphereCount
+      );
+    }
+    // SPHコンポーネントを再作成
+    this.createSphInstance();
+    // レンダリングパイプラインを更新
+    this.renderPipeline = new RenderPipeline(
+      this.device,
+      this.setupDevice.format,
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
+    );
+    this.renderPipeline.init();
+
+    // タイムスタンプをリセット（最初のフレームから開始）
+    this.timestamp.set(0.01);
   }
 
   createTransformData() {
