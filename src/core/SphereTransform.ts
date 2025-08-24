@@ -98,4 +98,18 @@ export class SphereTransform {
       transformParamsArray
     );
   }
+
+  updateBoxUBO(width: number) {
+    this.boxWidth = width;
+
+    const buf = new ArrayBuffer(16);
+    const f32 = new Float32Array(buf);
+    const u32 = new Uint32Array(buf);
+    f32[0] = width;
+    f32[1] = this.boxHeight;
+    f32[2] = this.boxDepth;
+    u32[3] = this.sphereCount;
+
+    this.device.queue.writeBuffer(this.transformParamsBuffer, 0, buf);
+  }
 }

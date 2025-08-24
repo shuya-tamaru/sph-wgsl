@@ -1,3 +1,4 @@
+import GUI from "lil-gui";
 import { Density } from "../core/Density";
 import { Gravity } from "../core/Gravity";
 import { Integrate } from "../core/Integrate";
@@ -38,6 +39,8 @@ export class Renderer {
   viscosity: Viscosity;
   integrate: Integrate;
 
+  gui: GUI;
+
   timestamp: TimeStep;
   cameraParams: {
     fov: number;
@@ -63,14 +66,23 @@ export class Renderer {
       distance: 15,
     };
     this.sphereTransformParams = {
-      boxWidth: 16,
-      boxHeight: 8,
-      boxDepth: 4,
-      sphereCount: 4000,
+      boxWidth: 32,
+      boxHeight: 4,
+      boxDepth: 16,
+      sphereCount: 10000,
     };
   }
 
   async init() {
+    this.gui = new GUI();
+    this.gui
+      .add(this.sphereTransformParams, "boxWidth", 1, 32, 1)
+      .name("Box Width")
+      .onChange((v: number) => {
+        this.sphereTransformParams.boxWidth = v;
+        this.sphereTransform.updateBoxUBO(this.sphereTransformParams.boxWidth);
+      });
+
     await this.createDevice();
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
@@ -179,7 +191,7 @@ export class Renderer {
   }
 
   render = () => {
-    const dt = 0.002;
+    const dt = 0.01;
     this.timestamp.set(dt);
 
     this.orbitControls.updateCamera();
@@ -191,7 +203,7 @@ export class Renderer {
       this.device.createCommandEncoder();
 
     //compute sph
-    // this.gravity.buildIndex(commandEncoder);
+    this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
     this.pressureForce.buildIndex(commandEncoder);

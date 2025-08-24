@@ -36,8 +36,7 @@ export class Integrate {
 
   private init() {
     const module = this.device.createShaderModule({
-      // code: integrateShader,
-      code: integrateShader2,
+      code: integrateShader,
     });
 
     const bindGroupLayout = this.device.createBindGroupLayout({

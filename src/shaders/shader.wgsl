@@ -67,6 +67,7 @@ fn vs_main(
 
   // シェーディング色
   let baseColor = velocity_to_color(velocity.xyz);
+  // let baseColor = vec3<f32>(0.0, 0.0, 1.0);
   let shaded = baseColor * (ambient + diff * 0.8);
 
 

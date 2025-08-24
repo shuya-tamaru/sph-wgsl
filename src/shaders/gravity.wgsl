@@ -18,7 +18,7 @@ struct TransformParams {
 @group(0) @binding(3) var<uniform> transformParams: TransformParams;
 @group(0) @binding(4) var<storage, read_write> gravities: array<vec4<f32>>;
 
-const GRAVITY: f32 = 9.8;
+const GRAVITY: f32 = 9.8 ;
 const COLLISION_DAMPING: f32 = 0.9;
 
 @compute @workgroup_size(64)
@@ -34,22 +34,28 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var newPosition = currentPosition + newVelocity * timeStep.dt;
 
       // X方向の境界判定
-  // if (abs(newPosition.x) > transformParams.boxWidth) {
-  //   newPosition.x = transformParams.boxWidth * sign(newPosition.x);
-  //   newVelocity.x *= -1.0 * COLLISION_DAMPING;
-  // }
+  if (abs(newPosition.x) > transformParams.boxWidth * 0.5) {
+    newPosition.x = transformParams.boxWidth * 0.5 * sign(newPosition.x);
+    newVelocity.x *= -1.0 * COLLISION_DAMPING;
+  }
 
-  // if (abs(newPosition.y) > transformParams.boxHeight) {
-  //   newPosition.y = transformParams.boxHeight * sign(newPosition.y);
+  //Y方向の境界判定
+  // if (newPosition.y > transformParams.boxHeight * 0.5) {
+  //   newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);
   //   newVelocity.y *= -1.0 * COLLISION_DAMPING;
   // }
+  //Y方向の境界判定
+  if (newPosition.y < -transformParams.boxHeight * 0.5) {
+    newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);
+    newVelocity.y *= -1.0 * COLLISION_DAMPING;
+  }
 
+  // Z方向の境界判定（2Dなら不要だが一応）
+  if (abs(newPosition.z) > transformParams.boxDepth * 0.5) {
+    newPosition.z = transformParams.boxDepth * 0.5 * sign(newPosition.z);
+    newVelocity.z *= -1.0 * COLLISION_DAMPING;
+  }
 
-  // // Z方向の境界判定（2Dなら不要だが一応）
-  // if (abs(newPosition.z) > transformParams.boxDepth) {
-  //   newPosition.z = transformParams.boxDepth * sign(newPosition.z);
-  //   newVelocity.z *= -1.0 * COLLISION_DAMPING;
-  // }
 
 
     positions[index] = vec4<f32>(newPosition, 0.0);

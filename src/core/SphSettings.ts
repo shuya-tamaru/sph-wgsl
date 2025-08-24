@@ -31,7 +31,7 @@ export class SphSettings {
     }
   ) {
     this.device = device;
-    this.h = 1.8;
+    this.h = 1.0;
     this.h2 = this.h * this.h;
     this.h3 = this.h * this.h2;
     this.h6 = this.h3 * this.h3;
@@ -41,7 +41,7 @@ export class SphSettings {
     this.viscosity = 45 / (Math.PI * this.h6);
     this.mass = 0.5;
     this.restDensity = 0.8;
-    this.pressureStiffness = 8000;
+    this.pressureStiffness = 100;
     this.viscosityMu = 0.12;
     this.tangentDamping = 0.1;
     this.restitution = 0.1;
