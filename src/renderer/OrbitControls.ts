@@ -13,6 +13,16 @@ export class OrbitControls {
   private lastMouseX = 0;
   private lastMouseY = 0;
   private isRightClick = false; // 右クリック判定
+
+  // タッチ状態
+  private isTouchActive = false;
+  private touchStartDistance = 0;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private lastTouchX = 0;
+  private lastTouchY = 0;
+  private touchCount = 0;
+
   // カメラの初期位置を右ななめ上からに変更
   // 例: x=distance/2, y=distance/2, z=distance
   // azimuth, elevationも初期値を調整
@@ -28,6 +38,9 @@ export class OrbitControls {
   private rotateSpeed = 0.01;
   private panSpeed = 2.0; // パン速度を大きく
   private zoomSpeed = 0.1;
+  private touchRotateSpeed = 1.2; // 初期値をより大きく
+  private touchPanSpeed = 8.0; // 初期値をより大きく
+  private touchZoomSpeed = 0.8; // 初期値をより大きく
 
   constructor(canvas: HTMLCanvasElement, initialDistance: number = 200) {
     this.canvas = canvas;
@@ -45,6 +58,14 @@ export class OrbitControls {
   }
 
   private setupEventListeners(): void {
+    // マウスイベント
+    this.setupMouseEvents();
+
+    // タッチイベント
+    this.setupTouchEvents();
+  }
+
+  private setupMouseEvents(): void {
     // マウスダウン
     this.canvas.addEventListener("mousedown", (e) => {
       this.isMouseDown = true;
@@ -97,6 +118,116 @@ export class OrbitControls {
 
       this.updateCamera();
     });
+  }
+
+  private setupTouchEvents(): void {
+    // タッチ開始
+    this.canvas.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        this.isTouchActive = true;
+        this.touchCount = e.touches.length;
+
+        if (this.touchCount === 1) {
+          // 単一タッチ：回転
+          const touch = e.touches[0];
+          this.touchStartX = touch.clientX;
+          this.touchStartY = touch.clientY;
+          this.lastTouchX = touch.clientX;
+          this.lastTouchY = touch.clientY;
+        } else if (this.touchCount === 2) {
+          // 二本指：ズームとパン
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          this.touchStartDistance = this.getTouchDistance(touch1, touch2);
+          this.touchStartX = (touch1.clientX + touch2.clientX) / 2;
+          this.touchStartY = (touch1.clientY + touch2.clientY) / 2;
+          this.lastTouchX = this.touchStartX;
+          this.lastTouchY = this.touchStartY;
+        }
+      },
+      { passive: false }
+    );
+
+    // タッチ移動
+    // setupTouchEventsメソッド内のtouchmoveイベントリスナーを修正
+
+    this.canvas.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        if (!this.isTouchActive) return;
+
+        if (this.touchCount === 1) {
+          // 単一タッチ：回転
+          const touch = e.touches[0];
+          const deltaX = touch.clientX - this.lastTouchX;
+          const deltaY = touch.clientY - this.lastTouchY;
+
+          // 閾値を削除して、すべての動きを拾う
+          this.rotate(
+            deltaX * this.touchRotateSpeed,
+            deltaY * this.touchRotateSpeed
+          );
+
+          this.lastTouchX = touch.clientX;
+          this.lastTouchY = touch.clientY;
+        } else if (this.touchCount === 2) {
+          // 二本指：ズームとパン
+          // ... 既存のコードを維持 ...
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          const currentDistance = this.getTouchDistance(touch1, touch2);
+          const currentX = (touch1.clientX + touch2.clientX) / 2;
+          const currentY = (touch1.clientY + touch2.clientY) / 2;
+
+          // より敏感なズーム
+          const zoomDelta = this.touchStartDistance - currentDistance;
+          this.distance += zoomDelta * this.touchZoomSpeed;
+          this.distance = Math.max(5, Math.min(500, this.distance));
+
+          // より敏感なパン
+          const deltaX = currentX - this.lastTouchX;
+          const deltaY = currentY - this.lastTouchY;
+
+          this.pan(deltaX * this.touchPanSpeed, deltaY * this.touchPanSpeed);
+
+          this.touchStartDistance = currentDistance;
+          this.lastTouchX = currentX;
+          this.lastTouchY = currentY;
+        }
+      },
+      { passive: false }
+    );
+
+    // タッチ終了
+    this.canvas.addEventListener(
+      "touchend",
+      (e) => {
+        e.preventDefault();
+        this.isTouchActive = false;
+        this.touchCount = 0;
+      },
+      { passive: false }
+    );
+
+    // タッチキャンセル
+    this.canvas.addEventListener(
+      "touchcancel",
+      (e) => {
+        e.preventDefault();
+        this.isTouchActive = false;
+        this.touchCount = 0;
+      },
+      { passive: false }
+    );
+  }
+
+  private getTouchDistance(touch1: Touch, touch2: Touch): number {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   // 回転処理
@@ -178,5 +309,53 @@ export class OrbitControls {
 
   setZoomSpeed(speed: number): void {
     this.zoomSpeed = speed;
+  }
+
+  // タッチ用パラメータ設定
+  setTouchRotateSpeed(speed: number): void {
+    this.touchRotateSpeed = speed;
+  }
+
+  setTouchPanSpeed(speed: number): void {
+    this.touchPanSpeed = speed;
+  }
+
+  setTouchZoomSpeed(speed: number): void {
+    this.touchZoomSpeed = speed;
+  }
+
+  // タッチ感度を一括設定
+  setTouchSensitivity(
+    rotateSpeed: number,
+    panSpeed: number,
+    zoomSpeed: number
+  ): void {
+    this.touchRotateSpeed = rotateSpeed;
+    this.touchPanSpeed = panSpeed;
+    this.touchZoomSpeed = zoomSpeed;
+  }
+
+  // 現在のタッチ感度を取得
+  getTouchSensitivity(): { rotate: number; pan: number; zoom: number } {
+    return {
+      rotate: this.touchRotateSpeed,
+      pan: this.touchPanSpeed,
+      zoom: this.touchZoomSpeed,
+    };
+  }
+
+  // 高感度モードに設定
+  setHighSensitivityMode(): void {
+    this.setTouchSensitivity(0.08, 8.0, 0.8);
+  }
+
+  // 標準感度モードに設定
+  setNormalSensitivityMode(): void {
+    this.setTouchSensitivity(0.05, 6.0, 0.5);
+  }
+
+  // 低感度モードに設定
+  setLowSensitivityMode(): void {
+    this.setTouchSensitivity(0.03, 4.0, 0.3);
   }
 }

@@ -191,7 +191,7 @@ export class Renderer {
   }
 
   render = () => {
-    const dt = 0.01;
+    const dt = 0.025;
     this.timestamp.set(dt);
 
     this.orbitControls.updateCamera();
