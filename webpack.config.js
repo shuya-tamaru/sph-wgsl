@@ -51,7 +51,7 @@ module.exports = {
   devtool: "eval-source-map",
 
   // ファイル監視の設定
-  watch: true,
+  watch: process.env.NODE_ENV !== "production" ? true : false,
   watchOptions: {
     ignored: /node_modules/,
     poll: 1000, // 1秒ごとにポーリング
