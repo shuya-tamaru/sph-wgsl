@@ -1,4 +1,6 @@
 const path = require("path");
+const isProd = process.env.NODE_ENV === "production";
+
 module.exports = {
   context: __dirname,
   entry: "./src/main.ts",
@@ -31,29 +33,24 @@ module.exports = {
   },
 
   // 開発サーバーの設定
-  devServer: {
-    static: {
-      directory: path.join(__dirname, "./"),
-    },
-    compress: true,
-    port: 8080,
-    hot: false, // ホットリロードを無効にしてエラーを回避
-    liveReload: true, // ライブリロードを使用
-    open: true,
-    watchFiles: ["src/**/*.ts", "src/**/*.wgsl", "index.html"],
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-    },
-  },
+  devServer: !isProd
+    ? {
+        static: { directory: path.join(__dirname, "./") },
+        compress: true,
+        port: 8080,
+        hot: false,
+        liveReload: true,
+        open: true,
+        watchFiles: ["src/**/*.ts", "src/**/*.wgsl", "index.html"],
+        headers: { "Access-Control-Allow-Origin": "*" },
+      }
+    : undefined,
 
   // 開発モードの設定
-  mode: "development",
-  devtool: "eval-source-map",
+  mode: isProd ? "production" : "development",
+  devtool: isProd ? "source-map" : "eval-source-map",
 
   // ファイル監視の設定
-  watch: process.env.NODE_ENV !== "production" ? true : false,
-  watchOptions: {
-    ignored: /node_modules/,
-    poll: 1000, // 1秒ごとにポーリング
-  },
+  watch: !isProd && true,
+  watchOptions: { ignored: /node_modules/, poll: 1000 },
 };
