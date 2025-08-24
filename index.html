@@ -15,6 +15,8 @@
       body {
         background-color: #fff;
         overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
       }
 
       #container {
@@ -30,12 +32,108 @@
         height: 100%;
         display: block;
       }
+
+      #error-container {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+        color: white;
+        padding: 2rem;
+      }
+
+      #error-container.show {
+        display: flex;
+      }
+
+      .error-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+      }
+
+      .error-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .error-message {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+        max-width: 600px;
+        opacity: 0.9;
+      }
+
+      .error-suggestions {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        max-width: 500px;
+      }
+
+      .error-suggestions h3 {
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+
+      .error-suggestions ul {
+        text-align: left;
+        list-style: none;
+        padding: 0;
+      }
+
+      .error-suggestions li {
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+      }
+
+      .error-suggestions li:before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: #ffd700;
+      }
     </style>
   </head>
   <body>
     <div id="container">
       <canvas id="gfx-main"></canvas>
     </div>
+
+    <div id="error-container">
+      <div class="error-icon">🚫</div>
+      <div class="error-title">WebGPU Not Supported</div>
+      <div class="error-message">
+        Your browser or device doesn't support WebGPU, which is required to run
+        this application.
+      </div>
+      <div class="error-suggestions">
+        <h3>To use this application:</h3>
+        <ul>
+          <li>
+            Use a modern browser like Chrome 113+, Edge 113+, or Firefox Nightly
+          </li>
+          <li>Enable WebGPU in your browser settings</li>
+          <li>Make sure your graphics drivers are up to date</li>
+          <li>Try using a desktop computer instead of mobile</li>
+        </ul>
+      </div>
+    </div>
+
     <script src="/dist/main.js"></script>
   </body>
 </html>

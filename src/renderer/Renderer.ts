@@ -63,7 +63,7 @@ export class Renderer {
       aspect: 1,
       near: 0.1,
       far: 500,
-      distance: 15,
+      distance: 20,
     };
     this.sphereTransformParams = {
       boxWidth: 32,
