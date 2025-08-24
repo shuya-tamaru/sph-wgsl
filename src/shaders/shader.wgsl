@@ -10,17 +10,17 @@ struct VertexOutput {
 }
 
 const RADIUS: f32 = 0.2;
+const EMISSIVE_GAIN: f32 = 1.2;
+const MAX_SPEED: f32 = 10.0;
 
 @group(0) @binding(0) var<uniform> transformUBO: TransformData;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> velocities: array<vec4<f32>>; 
 
-// 速度ベクトルから色を決める関数（青→シアン→緑→黄→赤のグラデーション）
 fn velocity_to_color(velocity: vec3<f32>) -> vec3<f32> {
   let speed = length(velocity);
-  // 速度の最大値を仮定（調整可）
-  let maxSpeed = 10.0;
-  let t = clamp(speed / maxSpeed, 0.0, 1.0);
+
+  let t = clamp(speed / MAX_SPEED, 0.0, 1.0);
 
   // 0.0: 青, 0.25: シアン, 0.5: 緑, 0.75: 黄, 1.0: 赤
   if (t < 0.25) {
@@ -41,8 +41,23 @@ fn velocity_to_color(velocity: vec3<f32>) -> vec3<f32> {
     return mix(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), k);
   }
 }
+fn velocity_to_color_ocean(velocity: vec3<f32>) -> vec3<f32> {
+  let speed = length(velocity);
 
+  // 波の色: 深い青→青緑→白
+  // 0.0: 深い青, 0.5: 青緑, 1.0: 白
+  let t = clamp(speed / MAX_SPEED, 0.0, 1.0);
 
+  if (t < 0.5) {
+    // 深い青 (0.0, 0.2, 0.6) → 青緑 (0.0, 0.7, 0.8)
+    let k = t / 0.5;
+    return mix(vec3<f32>(0.0, 0.2, 0.6), vec3<f32>(0.0, 0.7, 0.8), k);
+  } else {
+    // 青緑 (0.0, 0.7, 0.8) → 白 (1.0, 1.0, 1.0)
+    let k = (t - 0.5) / 0.5;
+    return mix(vec3<f32>(0.0, 0.7, 0.8), vec3<f32>(1.0, 1.0, 1.0), k);
+  }
+}
 
 
 
@@ -68,14 +83,19 @@ fn vs_main(
   // Lambert拡散反射
   let diff = max(dot(normal, lightDir), 0.0);
 
+   let baseColor = velocity_to_color_ocean(velocity.xyz);
+   let speed = length(velocity.xyz);
+   let t = clamp(speed * 2.0 + 2.0 / MAX_SPEED, 0.0, 1.0);
+   let emissive = baseColor * (EMISSIVE_GAIN * smoothstep(0.4, 1.0, t));
+
   // シェーディング色
-  let baseColor = velocity_to_color(velocity.xyz);
   // let baseColor = vec3<f32>(0.0, 0.0, 1.0);
   let shaded = baseColor * (ambient + diff * 0.8);
 
 
 
-  output.color = vec4<f32>(shaded, 1.0);
+  // output.color = vec4<f32>(shaded, 1.0);
+  output.color = vec4<f32>(shaded + emissive, 1.0);
 
   return output;
 }

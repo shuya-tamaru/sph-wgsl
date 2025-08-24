@@ -1,6 +1,6 @@
 export class SphSettings {
   private device: GPUDevice;
-  private h: number;
+  public h: number;
   private h2: number;
   private h3: number;
   private h6: number;
@@ -39,7 +39,7 @@ export class SphSettings {
     this.poly6 = 315 / (64 * Math.PI * this.h9);
     this.spiky = -45 / (Math.PI * this.h6);
     this.viscosity = 45 / (Math.PI * this.h6);
-    this.mass = 0.5;
+    this.mass = 0.2;
     this.restDensity = 0.8;
     this.pressureStiffness = 100;
     this.viscosityMu = 0.12;
