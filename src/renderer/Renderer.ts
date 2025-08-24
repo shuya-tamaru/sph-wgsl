@@ -77,7 +77,7 @@ export class Renderer {
     this.gui = new GUI();
 
     this.gui
-      .add(this.sphereTransformParams, "boxWidth", 16, 32, 1)
+      .add(this.sphereTransformParams, "boxWidth", 16, 64, 1)
       .name("Box Width")
       .onChange((v: number) => {
         this.sphereTransformParams.boxWidth = v;

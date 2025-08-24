@@ -43,6 +43,9 @@ fn velocity_to_color(velocity: vec3<f32>) -> vec3<f32> {
 }
 
 
+
+
+
 @vertex
 fn vs_main(
   @location(0) vertPos: vec4<f32>,
@@ -60,7 +63,7 @@ fn vs_main(
   // 簡易的なディレクショナルライト
   let lightDir = normalize(vec3<f32>(0.3, 1.0, 0.5)); // 上から斜め
   let lightColor = vec3<f32>(1.0, 1.0, 1.0);
-  let ambient = 0.5;
+  let ambient = 0.1;
 
   // Lambert拡散反射
   let diff = max(dot(normal, lightDir), 0.0);
