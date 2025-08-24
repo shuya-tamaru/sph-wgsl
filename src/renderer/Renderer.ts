@@ -15,6 +15,7 @@ import { RenderPipeline } from "./RenderPipeline";
 import { RenderTarget } from "./RenderTarget";
 import { SetupDevice } from "./SetupDevice";
 import { TransformSystem } from "./TransformSystem";
+import { WireBox } from "./WireBox";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -26,6 +27,7 @@ export class Renderer {
   renderTarget: RenderTarget;
   renderPipeline: RenderPipeline;
 
+  wireBox: WireBox;
   transformSystem: TransformSystem;
   orbitControls: OrbitControls;
   sphereInstance: SphereInstance;
@@ -63,7 +65,7 @@ export class Renderer {
       aspect: 1,
       near: 0.1,
       far: 500,
-      distance: 20,
+      distance: 25,
     };
     this.sphereTransformParams = {
       boxWidth: 32,
@@ -74,14 +76,7 @@ export class Renderer {
   }
 
   async init() {
-    this.gui = new GUI();
-    this.gui
-      .add(this.sphereTransformParams, "boxWidth", 1, 32, 1)
-      .name("Box Width")
-      .onChange((v: number) => {
-        this.sphereTransformParams.boxWidth = v;
-        this.sphereTransform.updateBoxUBO(this.sphereTransformParams.boxWidth);
-      });
+    this.initGui();
 
     await this.createDevice();
     this.canvas.width = window.innerWidth;
@@ -92,6 +87,73 @@ export class Renderer {
 
     this.createTransformData();
     this.createAssets();
+    this.wireBox = new WireBox(
+      this.device,
+      this.setupDevice.format,
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
+    );
+    this.createSphInstance();
+    // Create and initialize render pipeline
+    this.renderPipeline = new RenderPipeline(
+      this.device,
+      this.setupDevice.format,
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
+    );
+    this.renderPipeline.init();
+
+    // Add resize handler
+    window.addEventListener("resize", this.handleResize.bind(this));
+
+    this.render();
+  }
+
+  private initGui() {
+    this.gui = new GUI();
+
+    this.gui
+      .add(this.sphereTransformParams, "boxWidth", 16, 64, 1)
+      .name("Box Width")
+      .onChange((v: number) => {
+        this.sphereTransformParams.boxWidth = v;
+        this.sphereTransform.updateBoxUBO(
+          this.sphereTransformParams.boxWidth,
+          this.sphereTransformParams.boxDepth
+        );
+        // WireBoxのサイズも更新
+        this.wireBox.setSize({
+          w: this.sphereTransformParams.boxWidth,
+          h: this.sphereTransformParams.boxHeight,
+          d: this.sphereTransformParams.boxDepth,
+        });
+      });
+    this.gui
+      .add(this.sphereTransformParams, "boxDepth", 16, 64, 1)
+      .name("Box Depth")
+      .onChange((v: number) => {
+        this.sphereTransformParams.boxDepth = v;
+        this.sphereTransform.updateBoxUBO(
+          this.sphereTransformParams.boxWidth,
+          this.sphereTransformParams.boxDepth
+        );
+        // WireBoxのサイズも更新
+        this.wireBox.setSize({
+          w: this.sphereTransformParams.boxWidth,
+          h: this.sphereTransformParams.boxHeight,
+          d: v,
+        });
+      });
+    this.gui
+      .add(this.sphereTransformParams, "sphereCount", 5000, 15000, 5000)
+      .name("Sphere Count")
+      .onChange((v: number) => {
+        this.sphereTransformParams.sphereCount = v;
+        this.resetSimulation();
+      });
+  }
+
+  private createSphInstance() {
     this.gravity = new Gravity(
       this.device,
       this.sphereTransform,
@@ -129,19 +191,6 @@ export class Renderer {
       this.viscosity,
       this.timestamp
     );
-    // Create and initialize render pipeline
-    this.renderPipeline = new RenderPipeline(
-      this.device,
-      this.setupDevice.format,
-      this.transformSystem.getBuffer(),
-      this.sphereTransform
-    );
-    this.renderPipeline.init();
-
-    // Add resize handler
-    window.addEventListener("resize", this.handleResize.bind(this));
-
-    this.render();
   }
 
   private handleResize() {
@@ -154,6 +203,40 @@ export class Renderer {
       this.cameraParams.far
     );
     this.transformSystem.update();
+  }
+
+  private resetSimulation() {
+    // 既存のSPHコンポーネントを破棄
+    if (this.sphereTransform) {
+      // 新しい球体数でSphereTransformを再作成
+      this.sphereTransform = new SphereTransform(
+        this.device,
+        this.sphereTransformParams.boxWidth,
+        this.sphereTransformParams.boxHeight,
+        this.sphereTransformParams.boxDepth,
+        this.sphereTransformParams.sphereCount
+      );
+    }
+    // SPHコンポーネントを再作成
+    this.createSphInstance();
+    // レンダリングパイプラインを更新
+    this.renderPipeline = new RenderPipeline(
+      this.device,
+      this.setupDevice.format,
+      this.transformSystem.getBuffer(),
+      this.sphereTransform
+    );
+    this.renderPipeline.init();
+
+    // WireBoxのサイズも更新
+    this.wireBox.setSize({
+      w: this.sphereTransformParams.boxWidth,
+      h: this.sphereTransformParams.boxHeight,
+      d: this.sphereTransformParams.boxDepth,
+    });
+
+    // タイムスタンプをリセット（最初のフレームから開始）
+    this.timestamp.set(0.01);
   }
 
   createTransformData() {
@@ -217,6 +300,10 @@ export class Renderer {
     );
 
     this.renderPipeline.draw(renderpass);
+
+    // WireBoxを描画
+    this.wireBox.draw(renderpass);
+
     renderpass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);

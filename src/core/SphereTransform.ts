@@ -99,17 +99,27 @@ export class SphereTransform {
     );
   }
 
-  updateBoxUBO(width: number) {
+  updateBoxUBO(width: number, depth: number) {
     this.boxWidth = width;
+    this.boxDepth = depth;
 
     const buf = new ArrayBuffer(16);
     const f32 = new Float32Array(buf);
     const u32 = new Uint32Array(buf);
     f32[0] = width;
     f32[1] = this.boxHeight;
-    f32[2] = this.boxDepth;
+    f32[2] = depth;
     u32[3] = this.sphereCount;
 
     this.device.queue.writeBuffer(this.transformParamsBuffer, 0, buf);
+  }
+
+  updateSphereCount(count: number) {
+    this.sphereCount = count;
+    this.positions = new Float32Array(this.sphereCount * 4);
+    this.velocities = new Float32Array(this.sphereCount * 4);
+    this.colors = new Float32Array(this.sphereCount * 4);
+    this.createTransformData();
+    this.createBuffer();
   }
 }
