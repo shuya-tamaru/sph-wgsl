@@ -69,7 +69,7 @@ export class Renderer {
       boxWidth: 32,
       boxHeight: 4,
       boxDepth: 16,
-      sphereCount: 10000,
+      sphereCount: 5000,
     };
   }
 

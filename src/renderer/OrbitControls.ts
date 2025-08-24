@@ -16,7 +16,7 @@ export class OrbitControls {
   // カメラの初期位置を右ななめ上からに変更
   // 例: x=distance/2, y=distance/2, z=distance
   // azimuth, elevationも初期値を調整
-  private initialAzimuth = Math.PI / 4; // 45度
+  private initialAzimuth = 0; // 45度
   private initialElevation = Math.PI / 6; // 30度
 
   // カメラ制御パラメータ
