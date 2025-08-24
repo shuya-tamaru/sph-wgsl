@@ -4,11 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm run install-missing-dependencies && npm run build && npm run serve",
     "dev": "webpack serve --config webpack.config.js",
-    "install-missing-dependencies": "npm i",
-    "build": "webpack --config webpack.config.js",
-    "serve": "live-server --cors"
+    "build": "NODE_ENV=production webpack --config webpack.config.js",
+    "preview": "npx serve dist"
   },
   "keywords": [],
   "author": "",
