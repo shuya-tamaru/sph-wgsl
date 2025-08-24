@@ -117,12 +117,31 @@ export class Renderer {
       .name("Box Width")
       .onChange((v: number) => {
         this.sphereTransformParams.boxWidth = v;
-        this.sphereTransform.updateBoxUBO(this.sphereTransformParams.boxWidth);
+        this.sphereTransform.updateBoxUBO(
+          this.sphereTransformParams.boxWidth,
+          this.sphereTransformParams.boxDepth
+        );
         // WireBoxのサイズも更新
         this.wireBox.setSize({
           w: this.sphereTransformParams.boxWidth,
           h: this.sphereTransformParams.boxHeight,
           d: this.sphereTransformParams.boxDepth,
+        });
+      });
+    this.gui
+      .add(this.sphereTransformParams, "boxDepth", 16, 64, 1)
+      .name("Box Depth")
+      .onChange((v: number) => {
+        this.sphereTransformParams.boxDepth = v;
+        this.sphereTransform.updateBoxUBO(
+          this.sphereTransformParams.boxWidth,
+          this.sphereTransformParams.boxDepth
+        );
+        // WireBoxのサイズも更新
+        this.wireBox.setSize({
+          w: this.sphereTransformParams.boxWidth,
+          h: this.sphereTransformParams.boxHeight,
+          d: v,
         });
       });
     this.gui
