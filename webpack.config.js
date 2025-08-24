@@ -1,4 +1,5 @@
 const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const isProd = process.env.NODE_ENV === "production";
 
 module.exports = {
@@ -32,6 +33,12 @@ module.exports = {
   resolve: {
     extensions: [".ts"],
   },
+
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./index.html", // プロジェクトのルートにあるindex.htmlをテンプレートとして指定
+    }),
+  ],
 
   // 開発サーバーの設定
   devServer: !isProd
