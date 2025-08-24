@@ -40,10 +40,10 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   //Y方向の境界判定
-  // if (newPosition.y > transformParams.boxHeight * 0.5) {
-  //   newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);
-  //   newVelocity.y *= -1.0 * COLLISION_DAMPING;
-  // }
+  if (newPosition.y > transformParams.boxHeight + 10.0) {
+    newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);
+    newVelocity.y *= -1.0 * COLLISION_DAMPING;
+  }
   //Y方向の境界判定
   if (newPosition.y < -transformParams.boxHeight * 0.5) {
     newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);

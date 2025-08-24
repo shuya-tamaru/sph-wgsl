@@ -3,7 +3,6 @@ import { PressureForce } from "./PressureForce";
 import { SphereTransform } from "./SphereTransform";
 import { SphSettings } from "./SphSettings";
 import integrateShader from "../shaders/integrate.wgsl";
-import integrateShader2 from "../shaders/integrate2.wgsl";
 import { Viscosity } from "./Viscosity";
 
 export class Integrate {
