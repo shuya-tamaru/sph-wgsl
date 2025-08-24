@@ -20,6 +20,7 @@ struct TransformParams {
 
 const GRAVITY: f32 = 9.8 ;
 const COLLISION_DAMPING: f32 = 0.9;
+const BOX_HEIGHT_OFFSET: f32 = 10.0;
 
 @compute @workgroup_size(64)
 fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -40,7 +41,7 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   //Y方向の境界判定
-  if (newPosition.y > transformParams.boxHeight + 10.0) {
+  if (newPosition.y > transformParams.boxHeight + BOX_HEIGHT_OFFSET) {
     newPosition.y = transformParams.boxHeight * 0.5 * sign(newPosition.y);
     newVelocity.y *= -1.0 * COLLISION_DAMPING;
   }
