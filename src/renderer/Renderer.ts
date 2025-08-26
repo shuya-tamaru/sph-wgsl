@@ -16,6 +16,7 @@ import { RenderTarget } from "./RenderTarget";
 import { SetupDevice } from "./SetupDevice";
 import { TransformSystem } from "./TransformSystem";
 import { WireBox } from "./WireBox";
+import { Grid } from "../core/Grid";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -32,6 +33,8 @@ export class Renderer {
   orbitControls: OrbitControls;
   sphereInstance: SphereInstance;
   sphereTransform: SphereTransform;
+
+  grid: Grid;
 
   sphSettings: SphSettings;
   gravity: Gravity;
@@ -93,6 +96,7 @@ export class Renderer {
       this.transformSystem.getBuffer(),
       this.sphereTransform
     );
+    this.createOptimizeInstance();
     this.createSphInstance();
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
@@ -151,6 +155,15 @@ export class Renderer {
         this.sphereTransformParams.sphereCount = v;
         this.resetSimulation();
       });
+  }
+
+  private createOptimizeInstance() {
+    this.grid = new Grid(
+      this.device,
+      this.sphSettings.h,
+      this.sphereTransform,
+      this.sphereTransform.positionBuffer
+    );
   }
 
   private createSphInstance() {
@@ -285,7 +298,9 @@ export class Renderer {
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
 
-    //compute sph
+    this.grid.buildIndex(commandEncoder);
+
+    // //compute sph
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
@@ -312,17 +327,18 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.viscosity));
+    //   .then(() => this.debug(this.device, this.grid));
   };
 
-  async debug(device: GPUDevice, p: Viscosity) {
+  async debug(device: GPUDevice, p: Grid) {
     const result = await debugReadBuffer(
       this.device,
-      this.viscosity.getViscosityBuffer(),
-      this.sphereTransform.sphereCount * 4 * 4
+      p.cellIndicesBuffer,
+      p.sphereCount * 4
     );
 
-    const float32View = new Float32Array(result);
+    //floatかunitか注意
+    const float32View = new Uint32Array(result);
     console.log(float32View);
   }
 }

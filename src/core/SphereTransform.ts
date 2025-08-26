@@ -81,7 +81,7 @@ export class SphereTransform {
     this.velocityBuffer.unmap();
 
     this.transformParamsBuffer = this.device.createBuffer({
-      size: 256,
+      size: 16,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
     const transformParamsArray = new ArrayBuffer(16);
