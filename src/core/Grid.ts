@@ -195,4 +195,10 @@ export class Grid {
     pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 64));
     pass.end();
   }
+
+  resetCellCounts() {
+    const cellCounts = new Uint32Array(this.totalCellCount);
+    cellCounts.fill(0);
+    this.device.queue.writeBuffer(this.cellCountsBuffer, 0, cellCounts);
+  }
 }

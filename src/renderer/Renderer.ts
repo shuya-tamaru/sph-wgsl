@@ -19,6 +19,7 @@ import { WireBox } from "./WireBox";
 import { Grid } from "../core/Grid";
 import { CalcStartIndices } from "../core/CalcStartIndices";
 import { Scatter } from "../core/Scatter";
+import { ReOrder } from "../core/ReOrder";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -39,6 +40,7 @@ export class Renderer {
   grid: Grid;
   calcStartIndices: CalcStartIndices;
   scatter: Scatter;
+  reOrder: ReOrder;
 
   sphSettings: SphSettings;
   gravity: Gravity;
@@ -182,6 +184,14 @@ export class Renderer {
       this.sphereTransform.sphereCount,
       this.grid.totalCellCount
     );
+    this.reOrder = new ReOrder(
+      this.device,
+      this.sphereTransform.positionBuffer,
+      this.sphereTransform.velocityBuffer,
+      this.scatter.gridSphereIdsBuffer,
+      this.sphereTransform.transformParamsBuffer,
+      this.sphereTransform.sphereCount
+    );
   }
 
   private createSphInstance() {
@@ -316,17 +326,19 @@ export class Renderer {
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
 
+    this.grid.resetCellCounts();
     this.scatter.resetCellOffsets();
     this.grid.buildIndex(commandEncoder);
     this.calcStartIndices.buildIndex(commandEncoder);
     this.scatter.buildIndex(commandEncoder);
+    this.reOrder.buildIndex(commandEncoder);
     // //compute sph
-    this.gravity.buildIndex(commandEncoder);
-    this.density.buildIndex(commandEncoder);
-    this.pressure.buildIndex(commandEncoder);
-    this.pressureForce.buildIndex(commandEncoder);
-    this.viscosity.buildIndex(commandEncoder);
-    this.integrate.buildIndex(commandEncoder);
+    // this.gravity.buildIndex(commandEncoder);
+    // this.density.buildIndex(commandEncoder);
+    // this.pressure.buildIndex(commandEncoder);
+    // this.pressureForce.buildIndex(commandEncoder);
+    // this.viscosity.buildIndex(commandEncoder);
+    // this.integrate.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(
@@ -347,14 +359,14 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.scatter));
+    //   .then(() => this.debug(this.device, this.grid));
   };
 
-  async debug(device: GPUDevice, p: Scatter) {
+  async debug(device: GPUDevice, p: Grid) {
     const result = await debugReadBuffer(
       this.device,
-      p.gridSphereIdsBuffer,
-      p.sphereCount * 4
+      p.cellCountsBuffer,
+      p.totalCellCount * 4
     );
 
     //floatかunitか注意
