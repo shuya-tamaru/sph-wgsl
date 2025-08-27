@@ -72,7 +72,7 @@ export class Density {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.sphereTransform.positionBuffer },
+          resource: { buffer: this.sphereTransform.positionBufferIn },
         },
         {
           binding: 1,

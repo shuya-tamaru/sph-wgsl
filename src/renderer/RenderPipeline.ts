@@ -55,11 +55,11 @@ export class RenderPipeline {
         },
         {
           binding: 1,
-          resource: { buffer: this.sphereTransform.positionBuffer },
+          resource: { buffer: this.sphereTransform.positionBufferIn },
         },
         {
           binding: 2,
-          resource: { buffer: this.sphereTransform.velocityBuffer },
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
         },
       ],
     });

@@ -168,7 +168,7 @@ export class Renderer {
       this.device,
       this.sphSettings.h,
       this.sphereTransform,
-      this.sphereTransform.positionBuffer
+      this.sphereTransform.positionBufferIn
     );
     this.calcStartIndices = new CalcStartIndices(
       this.device,
@@ -186,8 +186,10 @@ export class Renderer {
     );
     this.reOrder = new ReOrder(
       this.device,
-      this.sphereTransform.positionBuffer,
-      this.sphereTransform.velocityBuffer,
+      this.sphereTransform.positionBufferIn,
+      this.sphereTransform.velocityBufferIn,
+      this.sphereTransform.positionBufferOut,
+      this.sphereTransform.velocityBufferOut,
       this.scatter.gridSphereIdsBuffer,
       this.sphereTransform.transformParamsBuffer,
       this.sphereTransform.sphereCount
@@ -332,13 +334,14 @@ export class Renderer {
     this.calcStartIndices.buildIndex(commandEncoder);
     this.scatter.buildIndex(commandEncoder);
     this.reOrder.buildIndex(commandEncoder);
+    this.sphereTransform.swapBuffer();
     // //compute sph
-    // this.gravity.buildIndex(commandEncoder);
-    // this.density.buildIndex(commandEncoder);
-    // this.pressure.buildIndex(commandEncoder);
-    // this.pressureForce.buildIndex(commandEncoder);
-    // this.viscosity.buildIndex(commandEncoder);
-    // this.integrate.buildIndex(commandEncoder);
+    this.gravity.buildIndex(commandEncoder);
+    this.density.buildIndex(commandEncoder);
+    this.pressure.buildIndex(commandEncoder);
+    this.pressureForce.buildIndex(commandEncoder);
+    this.viscosity.buildIndex(commandEncoder);
+    this.integrate.buildIndex(commandEncoder);
 
     const swapView = this.context.getCurrentTexture().createView();
     const renderpass: GPURenderPassEncoder = this.renderTarget.beginMainPass(

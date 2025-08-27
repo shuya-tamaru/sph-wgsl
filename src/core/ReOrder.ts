@@ -5,23 +5,29 @@ export class ReOrder {
   private gridSphereIdsBuffer: GPUBuffer;
   private transformParamsBuffer: GPUBuffer;
   private sphereCount: number;
-  private positionsBuffer: GPUBuffer;
-  private velocitiesBuffer: GPUBuffer;
+  private positionsBufferIn: GPUBuffer;
+  private velocitiesBufferIn: GPUBuffer;
+  private positionsBufferOut: GPUBuffer;
+  private velocitiesBufferOut: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
   private bindGroup: GPUBindGroup;
 
   constructor(
     device: GPUDevice,
-    positionsBuffer: GPUBuffer,
-    velocitiesBuffer: GPUBuffer,
+    positionsBufferIn: GPUBuffer,
+    velocitiesBufferIn: GPUBuffer,
+    positionsBufferOut: GPUBuffer,
+    velocitiesBufferOut: GPUBuffer,
     gridSphereIdsBuffer: GPUBuffer,
     transformParamsBuffer: GPUBuffer,
     sphereCount: number
   ) {
     this.device = device;
-    this.positionsBuffer = positionsBuffer;
-    this.velocitiesBuffer = velocitiesBuffer;
+    this.positionsBufferIn = positionsBufferIn;
+    this.velocitiesBufferIn = velocitiesBufferIn;
+    this.positionsBufferOut = positionsBufferOut;
+    this.velocitiesBufferOut = velocitiesBufferOut;
     this.gridSphereIdsBuffer = gridSphereIdsBuffer;
     this.transformParamsBuffer = transformParamsBuffer;
     this.sphereCount = sphereCount;
@@ -39,20 +45,30 @@ export class ReOrder {
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBuffer
+          buffer: { type: "read-only-storage" }, // positionsBufferIn
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // velocitiesBuffer
+          buffer: { type: "read-only-storage" }, // velocitiesBufferIn
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // gridSphereIdsBuffer
+          buffer: { type: "storage" }, // positionsBufferOut
         },
         {
           binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }, // velocitiesBufferOut
+        },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" }, // gridSphereIdsBuffer
+        },
+        {
+          binding: 5,
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "uniform" }, // transformParamsBuffer
         },
@@ -71,18 +87,26 @@ export class ReOrder {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.positionsBuffer },
+          resource: { buffer: this.positionsBufferIn },
         },
         {
           binding: 1,
-          resource: { buffer: this.velocitiesBuffer },
+          resource: { buffer: this.velocitiesBufferIn },
         },
         {
           binding: 2,
-          resource: { buffer: this.gridSphereIdsBuffer },
+          resource: { buffer: this.positionsBufferOut },
         },
         {
           binding: 3,
+          resource: { buffer: this.velocitiesBufferOut },
+        },
+        {
+          binding: 4,
+          resource: { buffer: this.gridSphereIdsBuffer },
+        },
+        {
+          binding: 5,
           resource: { buffer: this.transformParamsBuffer },
         },
       ],
@@ -93,7 +117,7 @@ export class ReOrder {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
-    pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 128));
+    pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 64));
     pass.end();
   }
 }

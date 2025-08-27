@@ -88,8 +88,8 @@ export class Integrate {
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [
-        { binding: 0, resource: this.sphereTransform.positionBuffer },
-        { binding: 1, resource: this.sphereTransform.velocityBuffer },
+        { binding: 0, resource: this.sphereTransform.positionBufferIn },
+        { binding: 1, resource: this.sphereTransform.velocityBufferIn },
         { binding: 2, resource: this.pressureForce.getPressureForceBuffer() },
         { binding: 3, resource: this.viscosity.getViscosityBuffer() },
         { binding: 4, resource: this.sphereTransform.transformParamsBuffer },
