@@ -145,15 +145,11 @@ export class SphereTransform {
     this.createBuffer();
   }
 
-  swapBuffer() {
-    // positions
-    const p = this.positionBufferIn;
-    this.positionBufferIn = this.positionBufferOut;
-    this.positionBufferOut = p;
-
-    // velocities
-    const v = this.velocityBufferIn;
-    this.velocityBufferIn = this.velocityBufferOut;
-    this.velocityBufferOut = v;
+  destroy() {
+    this.positionBufferIn.destroy();
+    this.velocityBufferIn.destroy();
+    this.positionBufferOut.destroy();
+    this.velocityBufferOut.destroy();
+    this.transformParamsBuffer.destroy();
   }
 }

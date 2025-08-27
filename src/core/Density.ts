@@ -13,7 +13,6 @@ export class Density {
   private gridSizeParams: GPUBuffer;
 
   private densityBuffer: GPUBuffer;
-  public neighborCountsBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
   private bindGroupLayout: GPUBindGroupLayout; // ← layout は固定で持つ
@@ -50,15 +49,6 @@ export class Density {
         GPUBufferUsage.COPY_DST |
         GPUBufferUsage.COPY_SRC,
       label: "densityBuffer",
-    });
-
-    this.neighborCountsBuffer = this.device.createBuffer({
-      size: bytes, // u32 × N
-      usage:
-        GPUBufferUsage.STORAGE |
-        GPUBufferUsage.COPY_DST |
-        GPUBufferUsage.COPY_SRC,
-      label: "neighborCountsBuffer",
     });
 
     // layout は固定でOK
@@ -104,11 +94,6 @@ export class Density {
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "uniform" },
         }, // gridSizeParams
-        {
-          binding: 8,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" },
-        }, // neighborCounts (RW)
       ],
     });
 
@@ -142,7 +127,6 @@ export class Density {
         { binding: 5, resource: { buffer: this.cellCountsBuffer } },
         { binding: 6, resource: { buffer: this.gridCountBuffer } },
         { binding: 7, resource: { buffer: this.gridSizeParams } },
-        { binding: 8, resource: { buffer: this.neighborCountsBuffer } },
       ],
     });
   }
@@ -160,9 +144,7 @@ export class Density {
   }
 
   // もし sphereCount 変更後に再初期化が必要なら
-  rebuildForNewCount() {
+  destroy() {
     this.densityBuffer.destroy?.();
-    this.neighborCountsBuffer.destroy?.();
-    this.initPipelineAndBuffers(); // pipeline は流用でもOK、buffer だけ再確保でもOK
   }
 }

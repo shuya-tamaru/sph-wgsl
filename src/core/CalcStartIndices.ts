@@ -95,4 +95,8 @@ export class CalcStartIndices {
     pass.dispatchWorkgroups(Math.ceil(this.totalCellCount / 64));
     pass.end();
   }
+
+  destroy() {
+    this.cellStartIndicesBuffer.destroy();
+  }
 }

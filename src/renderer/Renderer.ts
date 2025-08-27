@@ -190,6 +190,12 @@ export class Renderer {
     this.swap = new Swap(this.device, this.sphereTransform);
   }
 
+  private destroyOptimizeInstance() {
+    this.grid.destroy();
+    this.calcStartIndices.destroy();
+    this.scatter.destroy();
+  }
+
   private createSphInstance() {
     this.gravity = new Gravity(
       this.device,
@@ -234,6 +240,13 @@ export class Renderer {
     );
   }
 
+  private destroySphInstance() {
+    this.density.destroy();
+    this.pressure.destroy();
+    this.pressureForce.destroy();
+    this.viscosity.destroy();
+  }
+
   private handleResize() {
     this.renderTarget.updateCanvasSize();
     const aspect = this.canvas.width / this.canvas.height;
@@ -250,6 +263,7 @@ export class Renderer {
     // 既存のSPHコンポーネントを破棄
     if (this.sphereTransform) {
       // 新しい球体数でSphereTransformを再作成
+      this.sphereTransform.destroy();
       this.sphereTransform = new SphereTransform(
         this.device,
         this.sphereTransformParams.boxWidth,
@@ -258,8 +272,11 @@ export class Renderer {
         this.sphereTransformParams.sphereCount
       );
     }
+
+    this.destroyOptimizeInstance();
+    this.destroySphInstance();
+
     this.createOptimizeInstance();
-    // SPHコンポーネントを再作成
     this.createSphInstance();
     // レンダリングパイプラインを更新
     this.renderPipeline = new RenderPipeline(
@@ -269,13 +286,6 @@ export class Renderer {
       this.sphereTransform
     );
     this.renderPipeline.init();
-
-    // WireBoxのサイズも更新
-    this.wireBox.setSize({
-      w: this.sphereTransformParams.boxWidth,
-      h: this.sphereTransformParams.boxHeight,
-      d: this.sphereTransformParams.boxDepth,
-    });
 
     // タイムスタンプをリセット（最初のフレームから開始）
     this.timestamp.set(0.01);

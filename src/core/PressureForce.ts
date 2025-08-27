@@ -118,4 +118,8 @@ export class PressureForce {
   getPressureForceBuffer() {
     return this.pressureForceBuffer;
   }
+
+  destroy() {
+    this.pressureForceBuffer.destroy();
+  }
 }

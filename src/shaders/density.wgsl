@@ -39,7 +39,6 @@ struct GridSizeParams {
 @group(0) @binding(5) var<storage, read> cellCounts: array<u32>;
 @group(0) @binding(6) var<uniform> gridParams: GridParams;
 @group(0) @binding(7) var<uniform> gridSizeParams: GridSizeParams;
-@group(0) @binding(8) var<storage, read_write> neighborCounts: array<u32>;
 
 fn pos_to_cell_coord(p: vec3<f32>) -> vec3<i32> {
   let r = (p - vec3(gridSizeParams.xMin, gridSizeParams.yMin, gridSizeParams.zMin))
@@ -64,7 +63,6 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let pi = positions[index].xyz;     // ★reordered 配列の i 番目
   var rho = 0.0;
-  var neighborCount = 0u;
 
   // 自セル座標
   let cc = pos_to_cell_coord(pi);
@@ -94,7 +92,6 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (r2 < densityParams.h2) {
               let t = densityParams.h2 - r2;
               rho += densityParams.mass * densityParams.poly6 * (t*t*t);
-              neighborCount += 1u;
             }
           }
           k = k + 1u;
@@ -108,7 +105,6 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   rho += densityParams.mass * densityParams.poly6 * h6;
 
   densities[index] = rho;
-  neighborCounts[index] = neighborCount;
 }
 // struct TransformParams {
 //     boxWidth: f32,

@@ -140,4 +140,9 @@ export class Scatter {
     pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 64));
     pass.end();
   }
+
+  destroy() {
+    this.gridSphereIdsBuffer.destroy();
+    this.cellOffsetsBuffer.destroy();
+  }
 }

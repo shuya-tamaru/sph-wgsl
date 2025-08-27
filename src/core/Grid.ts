@@ -203,4 +203,11 @@ export class Grid {
     cellCounts.fill(0);
     this.device.queue.writeBuffer(this.cellCountsBuffer, 0, cellCounts);
   }
+
+  destroy() {
+    this.cellIndicesBuffer.destroy();
+    this.cellCountsBuffer.destroy();
+    this.gridSizeBuffer.destroy();
+    this.gridCountBuffer.destroy();
+  }
 }

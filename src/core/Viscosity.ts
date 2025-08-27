@@ -126,4 +126,8 @@ export class Viscosity {
   getViscosityBuffer() {
     return this.viscosityBuffer;
   }
+
+  destroy() {
+    this.viscosityBuffer.destroy();
+  }
 }

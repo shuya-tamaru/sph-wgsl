@@ -115,4 +115,8 @@ export class Pressure {
   getPressureBuffer() {
     return this.pressureBuffer;
   }
+
+  destroy() {
+    this.pressureBuffer.destroy();
+  }
 }
