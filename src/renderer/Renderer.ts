@@ -18,6 +18,7 @@ import { TransformSystem } from "./TransformSystem";
 import { WireBox } from "./WireBox";
 import { Grid } from "../core/Grid";
 import { CalcStartIndices } from "../core/CalcStartIndices";
+import { Scatter } from "../core/Scatter";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -37,6 +38,8 @@ export class Renderer {
 
   grid: Grid;
   calcStartIndices: CalcStartIndices;
+  scatter: Scatter;
+
   sphSettings: SphSettings;
   gravity: Gravity;
   density: Density;
@@ -169,6 +172,14 @@ export class Renderer {
       this.device,
       this.grid.gridCountBuffer,
       this.grid.cellCountsBuffer,
+      this.grid.totalCellCount
+    );
+    this.scatter = new Scatter(
+      this.device,
+      this.grid.cellIndicesBuffer,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.sphereTransform.transformParamsBuffer,
+      this.sphereTransform.sphereCount,
       this.grid.totalCellCount
     );
   }
@@ -305,8 +316,10 @@ export class Renderer {
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
 
+    this.scatter.resetCellOffsets();
     this.grid.buildIndex(commandEncoder);
     this.calcStartIndices.buildIndex(commandEncoder);
+    this.scatter.buildIndex(commandEncoder);
     // //compute sph
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
@@ -334,14 +347,14 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.calcStartIndices));
+    //   .then(() => this.debug(this.device, this.scatter));
   };
 
-  async debug(device: GPUDevice, p: CalcStartIndices) {
+  async debug(device: GPUDevice, p: Scatter) {
     const result = await debugReadBuffer(
       this.device,
-      p.cellStartIndicesBuffer,
-      p.totalCellCount * 4
+      p.gridSphereIdsBuffer,
+      p.sphereCount * 4
     );
 
     //floatかunitか注意

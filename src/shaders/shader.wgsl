@@ -17,30 +17,6 @@ const MAX_SPEED: f32 = 10.0;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> velocities: array<vec4<f32>>; 
 
-fn velocity_to_color(velocity: vec3<f32>) -> vec3<f32> {
-  let speed = length(velocity);
-
-  let t = clamp(speed / MAX_SPEED, 0.0, 1.0);
-
-  // 0.0: 青, 0.25: シアン, 0.5: 緑, 0.75: 黄, 1.0: 赤
-  if (t < 0.25) {
-    // 青→シアン
-    let k = t / 0.25;
-    return mix(vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), k);
-  } else if (t < 0.5) {
-    // シアン→緑
-    let k = (t - 0.25) / 0.25;
-    return mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(0.0, 1.0, 0.0), k);
-  } else if (t < 0.75) {
-    // 緑→黄
-    let k = (t - 0.5) / 0.25;
-    return mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), k);
-  } else {
-    // 黄→赤
-    let k = (t - 0.75) / 0.25;
-    return mix(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), k);
-  }
-}
 fn velocity_to_color_ocean(velocity: vec3<f32>) -> vec3<f32> {
   let speed = length(velocity);
 
