@@ -11,7 +11,7 @@ export class Scatter {
   public totalCellCount: number;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
@@ -28,15 +28,15 @@ export class Scatter {
     this.sphereCount = sphereCount;
     this.totalCellCount = totalCellCount;
 
-    this.createBuffer();
-    this.init();
+    this.initPipelineAndBuffers();
   }
-  private init() {
+  private initPipelineAndBuffers() {
+    this.createBuffer();
     const module = this.device.createShaderModule({
       code: scatterShader,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -68,15 +68,20 @@ export class Scatter {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
-        { binding: 0, resource: { buffer: this.cellIndicesBuffer } },
+        {
+          binding: 0,
+          resource: { buffer: this.cellIndicesBuffer },
+        },
         {
           binding: 1,
           resource: { buffer: this.cellStartIndicesBuffer },
@@ -131,7 +136,7 @@ export class Scatter {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 64));
     pass.end();
   }

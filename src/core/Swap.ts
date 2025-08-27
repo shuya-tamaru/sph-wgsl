@@ -1,72 +1,64 @@
-import reorderShader from "../shaders/reorder.wgsl";
-import { Scatter } from "./Scatter";
 import { SphereTransform } from "./SphereTransform";
+import swapShader from "../shaders/swap.wgsl";
 
-export class ReOrder {
+export class Swap {
   private device: GPUDevice;
   private sphereTransform: SphereTransform;
-  private scatter: Scatter;
 
   private pipeline: GPUComputePipeline;
   private bindGroupLayout: GPUBindGroupLayout;
 
-  constructor(
-    device: GPUDevice,
-    sphereTransform: SphereTransform,
-    scatter: Scatter
-  ) {
+  constructor(device: GPUDevice, sphereTransform: SphereTransform) {
     this.device = device;
     this.sphereTransform = sphereTransform;
-    this.scatter = scatter;
 
     this.initPipelineAndBuffers();
   }
 
   private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
-      code: reorderShader,
+      code: swapShader,
     });
-
     this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // positionsBufferIn
+          buffer: { type: "read-only-storage" }, // positionsBufferOut
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // velocitiesBufferIn
+          buffer: { type: "read-only-storage" }, // velocitiesBufferOut
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBufferOut
+          buffer: { type: "storage" }, // positionsBufferIn
         },
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // velocitiesBufferOut
+          buffer: { type: "storage" }, // velocitiesBufferIn
         },
         {
           binding: 4,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // gridSphereIdsBuffer
-        },
-        {
-          binding: 5,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // transformParamsBuffer
+          buffer: { type: "uniform" }, // transformParams
         },
       ],
     });
 
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [this.bindGroupLayout],
+    });
+
     this.pipeline = this.device.createComputePipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [this.bindGroupLayout],
-      }),
-      compute: { module, entryPoint: "cs_main" },
+      layout: pipelineLayout,
+      compute: {
+        module: module,
+        entryPoint: "cs_main",
+      },
     });
   }
 
@@ -76,26 +68,22 @@ export class ReOrder {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.sphereTransform.positionBufferIn },
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.sphereTransform.velocityBufferIn },
-        },
-        {
-          binding: 2,
           resource: { buffer: this.sphereTransform.positionBufferOut },
         },
         {
-          binding: 3,
+          binding: 1,
           resource: { buffer: this.sphereTransform.velocityBufferOut },
         },
         {
-          binding: 4,
-          resource: { buffer: this.scatter.gridSphereIdsBuffer },
+          binding: 2,
+          resource: { buffer: this.sphereTransform.positionBufferIn },
         },
         {
-          binding: 5,
+          binding: 3,
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+        {
+          binding: 4,
           resource: { buffer: this.sphereTransform.transformParamsBuffer },
         },
       ],

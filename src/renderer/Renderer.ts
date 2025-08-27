@@ -20,6 +20,7 @@ import { Grid } from "../core/Grid";
 import { CalcStartIndices } from "../core/CalcStartIndices";
 import { Scatter } from "../core/Scatter";
 import { ReOrder } from "../core/ReOrder";
+import { Swap } from "../core/Swap";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -41,6 +42,7 @@ export class Renderer {
   calcStartIndices: CalcStartIndices;
   scatter: Scatter;
   reOrder: ReOrder;
+  swap: Swap;
 
   sphSettings: SphSettings;
   gravity: Gravity;
@@ -155,7 +157,7 @@ export class Renderer {
         });
       });
     this.gui
-      .add(this.sphereTransformParams, "sphereCount", 5000, 15000, 5000)
+      .add(this.sphereTransformParams, "sphereCount", 5000, 20000, 5000)
       .name("Sphere Count")
       .onChange((v: number) => {
         this.sphereTransformParams.sphereCount = v;
@@ -184,16 +186,8 @@ export class Renderer {
       this.sphereTransform.sphereCount,
       this.grid.totalCellCount
     );
-    this.reOrder = new ReOrder(
-      this.device,
-      this.sphereTransform.positionBufferIn,
-      this.sphereTransform.velocityBufferIn,
-      this.sphereTransform.positionBufferOut,
-      this.sphereTransform.velocityBufferOut,
-      this.scatter.gridSphereIdsBuffer,
-      this.sphereTransform.transformParamsBuffer,
-      this.sphereTransform.sphereCount
-    );
+    this.reOrder = new ReOrder(this.device, this.sphereTransform, this.scatter);
+    this.swap = new Swap(this.device, this.sphereTransform);
   }
 
   private createSphInstance() {
@@ -205,7 +199,11 @@ export class Renderer {
     this.density = new Density(
       this.device,
       this.sphereTransform,
-      this.sphSettings
+      this.sphSettings,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.pressure = new Pressure(
       this.device,
@@ -260,6 +258,7 @@ export class Renderer {
         this.sphereTransformParams.sphereCount
       );
     }
+    this.createOptimizeInstance();
     // SPHコンポーネントを再作成
     this.createSphInstance();
     // レンダリングパイプラインを更新
@@ -316,7 +315,7 @@ export class Renderer {
     );
   }
 
-  render = () => {
+  render = async () => {
     const dt = 0.025;
     this.timestamp.set(dt);
 
@@ -334,7 +333,7 @@ export class Renderer {
     this.calcStartIndices.buildIndex(commandEncoder);
     this.scatter.buildIndex(commandEncoder);
     this.reOrder.buildIndex(commandEncoder);
-    this.sphereTransform.swapBuffer();
+    this.swap.buildIndex(commandEncoder);
     // //compute sph
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
@@ -362,18 +361,18 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.grid));
+    //   .then(() => this.debug(this.device, this.density));
   };
 
-  async debug(device: GPUDevice, p: Grid) {
+  async debug(device: GPUDevice, p: Density) {
     const result = await debugReadBuffer(
       this.device,
-      p.cellCountsBuffer,
-      p.totalCellCount * 4
+      p.getDensityBuffer(),
+      this.sphereTransform.sphereCount * 4
     );
 
     //floatかunitか注意
-    const float32View = new Uint32Array(result);
+    const float32View = new Float32Array(result);
     console.log(float32View);
   }
 }

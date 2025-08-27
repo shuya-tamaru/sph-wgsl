@@ -25,19 +25,19 @@ export class Grid {
   public cellCountY: number;
   public cellCountZ: number;
   public totalCellCount: number;
-  private positionBuffer: GPUBuffer;
+  private positionBufferIn: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
     h: number,
     sphereTransform: SphereTransform,
-    positionBuffer: GPUBuffer
+    positionBufferIn: GPUBuffer
   ) {
     this.device = device;
-    this.positionBuffer = positionBuffer;
+    this.positionBufferIn = positionBufferIn;
     this.cellSize = h;
     this.sphereCount = sphereTransform.sphereCount;
     this.sphereTransform = sphereTransform;
@@ -61,16 +61,16 @@ export class Grid {
       cellSize: this.cellSize,
     };
 
-    this.createBuffer();
-    this.init();
+    this.initPipelineAndBuffers();
   }
 
-  private init() {
+  private initPipelineAndBuffers() {
+    this.createBuffer();
     const module = this.device.createShaderModule({
       code: calcCellIndicesShader,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -107,17 +107,19 @@ export class Grid {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.positionBuffer },
+          resource: { buffer: this.positionBufferIn },
         },
         {
           binding: 1,
@@ -191,7 +193,7 @@ export class Grid {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereCount / 64));
     pass.end();
   }

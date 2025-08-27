@@ -17,6 +17,7 @@ const MAX_SPEED: f32 = 10.0;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> velocities: array<vec4<f32>>; 
 
+
 fn velocity_to_color_ocean(velocity: vec3<f32>) -> vec3<f32> {
   let speed = length(velocity);
 

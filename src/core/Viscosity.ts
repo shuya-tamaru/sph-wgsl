@@ -10,7 +10,7 @@ export class Viscosity {
   private viscosityBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
@@ -22,21 +22,21 @@ export class Viscosity {
     this.sphereTransform = sphereTransform;
     this.sphSettings = sphSettings;
     this.densityBuffer = densityBuffer;
-    this.init();
+    this.initPipelineAndBuffers();
   }
-  private init() {
+  private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
       code: viscosityShader,
     });
     this.viscosityBuffer = this.device.createBuffer({
-      size: this.sphereTransform.sphereCount * 4 * 4, // 1パーティクルあたりfloat1つ (4バイト)
+      size: this.sphereTransform.sphereCount * 4 * 4,
       usage:
         GPUBufferUsage.STORAGE |
         GPUBufferUsage.COPY_DST |
         GPUBufferUsage.COPY_SRC,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -73,13 +73,15 @@ export class Viscosity {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -116,7 +118,7 @@ export class Viscosity {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereTransform.sphereCount / 64));
     pass.end();
   }

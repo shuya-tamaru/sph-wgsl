@@ -7,7 +7,7 @@ export class RenderPipeline {
   private format: GPUTextureFormat;
 
   private pipeline: GPURenderPipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
   private sphereInstance: SphereInstance;
   private sphereTransform: SphereTransform;
   private transformBuffer: GPUBuffer;
@@ -26,7 +26,7 @@ export class RenderPipeline {
   }
 
   public init() {
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -46,26 +46,8 @@ export class RenderPipeline {
       ],
     });
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.transformBuffer },
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.sphereTransform.positionBufferIn },
-        },
-        {
-          binding: 2,
-          resource: { buffer: this.sphereTransform.velocityBufferIn },
-        },
-      ],
-    });
-
     const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout],
+      bindGroupLayouts: [this.bindGroupLayout],
     });
 
     this.pipeline = this.device.createRenderPipeline({
@@ -91,11 +73,31 @@ export class RenderPipeline {
     });
   }
 
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: this.transformBuffer },
+        },
+        {
+          binding: 1,
+          resource: { buffer: this.sphereTransform.positionBufferIn },
+        },
+        {
+          binding: 2,
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+      ],
+    });
+  }
+
   draw(pass: GPURenderPassEncoder) {
     pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.setVertexBuffer(0, this.sphereInstance.getVertexBuffer());
     pass.setIndexBuffer(this.sphereInstance.getIndexBuffer(), "uint16");
-    pass.setBindGroup(0, this.bindGroup);
     pass.drawIndexed(
       this.sphereInstance.getIndexCount(),
       this.sphereTransform.sphereCount

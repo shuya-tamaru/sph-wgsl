@@ -11,7 +11,7 @@ export class PressureForce {
   private pressureBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
@@ -25,10 +25,10 @@ export class PressureForce {
     this.densityBuffer = densityBuffer;
     this.pressureBuffer = pressureBuffer;
     this.sphSettings = sphSettings;
-    this.init();
+    this.initPipelineAndBuffers();
   }
 
-  private init() {
+  private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
       code: pressureForceShader,
     });
@@ -41,7 +41,7 @@ export class PressureForce {
         GPUBufferUsage.COPY_SRC,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -78,26 +78,22 @@ export class PressureForce {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
           resource: { buffer: this.sphereTransform.positionBufferIn },
         },
-        {
-          binding: 1,
-          resource: { buffer: this.densityBuffer },
-        },
-        {
-          binding: 2,
-          resource: { buffer: this.pressureBuffer },
-        },
+        { binding: 1, resource: { buffer: this.densityBuffer } },
+        { binding: 2, resource: { buffer: this.pressureBuffer } },
         {
           binding: 3,
           resource: { buffer: this.sphereTransform.transformParamsBuffer },
@@ -106,10 +102,7 @@ export class PressureForce {
           binding: 4,
           resource: { buffer: this.sphSettings.pressureForceParamsBuffer },
         },
-        {
-          binding: 5,
-          resource: { buffer: this.pressureForceBuffer },
-        },
+        { binding: 5, resource: { buffer: this.pressureForceBuffer } },
       ],
     });
   }
@@ -117,7 +110,7 @@ export class PressureForce {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereTransform.sphereCount / 64));
     pass.end();
   }

@@ -7,7 +7,7 @@ export class Gravity {
   private timeStepBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout; // ← layout は固定で持つ
 
   constructor(
     device: GPUDevice,
@@ -17,15 +17,15 @@ export class Gravity {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.timeStepBuffer = timeStepBuffer;
-    this.init();
+    this.initPipelineAndBuffers();
   }
 
-  private init() {
+  private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
       code: gravityShader,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -52,13 +52,15 @@ export class Gravity {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -80,8 +82,12 @@ export class Gravity {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereTransform.sphereCount / 64));
     pass.end();
+  }
+
+  getVelocityBuffer() {
+    return this.sphereTransform.velocityBufferOut;
   }
 }

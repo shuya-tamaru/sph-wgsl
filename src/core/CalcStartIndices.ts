@@ -8,7 +8,7 @@ export class CalcStartIndices {
   public totalCellCount: number;
 
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
@@ -21,16 +21,16 @@ export class CalcStartIndices {
     this.cellCountsBuffer = cellCountsBuffer;
     this.totalCellCount = totalCellCount;
 
-    this.createBuffer();
-    this.init();
+    this.initPipelineAndBuffers();
   }
 
-  private init() {
+  private initPipelineAndBuffers() {
+    this.createBuffer();
     const module = this.device.createShaderModule({
       code: calcCellStartIndicesShader,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -52,13 +52,15 @@ export class CalcStartIndices {
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -89,7 +91,7 @@ export class CalcStartIndices {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.totalCellCount / 64));
     pass.end();
   }
