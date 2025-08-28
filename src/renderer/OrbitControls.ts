@@ -37,7 +37,7 @@ export class OrbitControls {
   // 感度
   private rotateSpeed = 0.01;
   private panSpeed = 2.0; // パン速度を大きく
-  private zoomSpeed = 0.1;
+  private zoomSpeed = 0.05 ;
   private touchRotateSpeed = 1.2; // 初期値をより大きく
   private touchPanSpeed = 8.0; // 初期値をより大きく
   private touchZoomSpeed = 0.8; // 初期値をより大きく
