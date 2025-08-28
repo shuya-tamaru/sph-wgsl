@@ -11,17 +11,29 @@ export class Viscosity {
 
   private pipeline: GPUComputePipeline;
   private bindGroupLayout: GPUBindGroupLayout;
+  private cellStartIndicesBuffer: GPUBuffer;
+  private cellCountsBuffer: GPUBuffer;
+  private gridCountBuffer: GPUBuffer;
+  private gridSizeParams: GPUBuffer;
 
   constructor(
     device: GPUDevice,
     sphereTransform: SphereTransform,
     sphSettings: SphSettings,
-    densityBuffer: GPUBuffer
+    densityBuffer: GPUBuffer,
+    cellStartIndicesBuffer: GPUBuffer,
+    cellCountsBuffer: GPUBuffer,
+    gridCountBuffer: GPUBuffer,
+    gridSizeParams: GPUBuffer
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.sphSettings = sphSettings;
     this.densityBuffer = densityBuffer;
+    this.cellStartIndicesBuffer = cellStartIndicesBuffer;
+    this.cellCountsBuffer = cellCountsBuffer;
+    this.gridCountBuffer = gridCountBuffer;
+    this.gridSizeParams = gridSizeParams;
     this.initPipelineAndBuffers();
   }
   private initPipelineAndBuffers() {
@@ -68,6 +80,26 @@ export class Viscosity {
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "storage" }, // viscosityBuffer
         },
+        {
+          binding: 6,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellStart
+        {
+          binding: 7,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellCounts
+        {
+          binding: 8,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridParams
+        {
+          binding: 9,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridSizeParams
       ],
     });
 
@@ -110,6 +142,22 @@ export class Viscosity {
         {
           binding: 5,
           resource: { buffer: this.viscosityBuffer },
+        },
+        {
+          binding: 6,
+          resource: { buffer: this.cellStartIndicesBuffer },
+        },
+        {
+          binding: 7,
+          resource: { buffer: this.cellCountsBuffer },
+        },
+        {
+          binding: 8,
+          resource: { buffer: this.gridCountBuffer },
+        },
+        {
+          binding: 9,
+          resource: { buffer: this.gridSizeParams },
         },
       ],
     });

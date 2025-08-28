@@ -157,7 +157,7 @@ export class Renderer {
         });
       });
     this.gui
-      .add(this.sphereTransformParams, "sphereCount", 5000, 20000, 5000)
+      .add(this.sphereTransformParams, "sphereCount", 5000, 10000, 5000)
       .name("Sphere Count")
       .onChange((v: number) => {
         this.sphereTransformParams.sphereCount = v;
@@ -222,13 +222,21 @@ export class Renderer {
       this.sphereTransform,
       this.density.getDensityBuffer(),
       this.pressure.getPressureBuffer(),
-      this.sphSettings
+      this.sphSettings,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.viscosity = new Viscosity(
       this.device,
       this.sphereTransform,
       this.sphSettings,
-      this.density.getDensityBuffer()
+      this.density.getDensityBuffer(),
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.integrate = new Integrate(
       this.device,
@@ -371,13 +379,13 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.density));
+    //   .then(() => this.debug(this.device, this.pressureForce));
   };
 
-  async debug(device: GPUDevice, p: Density) {
+  async debug(device: GPUDevice, p: PressureForce) {
     const result = await debugReadBuffer(
       this.device,
-      p.getDensityBuffer(),
+      p.getPressureForceBuffer(),
       this.sphereTransform.sphereCount * 4
     );
 

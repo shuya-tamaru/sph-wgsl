@@ -10,6 +10,11 @@ export class PressureForce {
   private densityBuffer: GPUBuffer;
   private pressureBuffer: GPUBuffer;
 
+  private cellStartIndicesBuffer: GPUBuffer;
+  private cellCountsBuffer: GPUBuffer;
+  private gridCountBuffer: GPUBuffer;
+  private gridSizeParams: GPUBuffer;
+
   private pipeline: GPUComputePipeline;
   private bindGroupLayout: GPUBindGroupLayout;
 
@@ -18,13 +23,21 @@ export class PressureForce {
     sphereTransform: SphereTransform,
     densityBuffer: GPUBuffer,
     pressureBuffer: GPUBuffer,
-    sphSettings: SphSettings
+    sphSettings: SphSettings,
+    cellStartIndicesBuffer: GPUBuffer,
+    cellCountsBuffer: GPUBuffer,
+    gridCountBuffer: GPUBuffer,
+    gridSizeParams: GPUBuffer
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.densityBuffer = densityBuffer;
     this.pressureBuffer = pressureBuffer;
     this.sphSettings = sphSettings;
+    this.cellStartIndicesBuffer = cellStartIndicesBuffer;
+    this.cellCountsBuffer = cellCountsBuffer;
+    this.gridCountBuffer = gridCountBuffer;
+    this.gridSizeParams = gridSizeParams;
     this.initPipelineAndBuffers();
   }
 
@@ -73,6 +86,26 @@ export class PressureForce {
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "storage" }, // pressureForceBuffer
         },
+        {
+          binding: 6,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellStart
+        {
+          binding: 7,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellCounts
+        {
+          binding: 8,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridParams
+        {
+          binding: 9,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridSizeParams
       ],
     });
 
@@ -103,6 +136,10 @@ export class PressureForce {
           resource: { buffer: this.sphSettings.pressureForceParamsBuffer },
         },
         { binding: 5, resource: { buffer: this.pressureForceBuffer } },
+        { binding: 6, resource: { buffer: this.cellStartIndicesBuffer } },
+        { binding: 7, resource: { buffer: this.cellCountsBuffer } },
+        { binding: 8, resource: { buffer: this.gridCountBuffer } },
+        { binding: 9, resource: { buffer: this.gridSizeParams } },
       ],
     });
   }
