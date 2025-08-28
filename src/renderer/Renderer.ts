@@ -111,7 +111,8 @@ export class Renderer {
       this.device,
       this.setupDevice.format,
       this.transformSystem.getBuffer(),
-      this.sphereTransform
+      this.sphereTransform,
+      this.density
     );
     this.renderPipeline.init();
 
@@ -157,7 +158,7 @@ export class Renderer {
         });
       });
     this.gui
-      .add(this.sphereTransformParams, "sphereCount", 5000, 10000, 5000)
+      .add(this.sphereTransformParams, "sphereCount", 5000, 30000, 5000)
       .name("Sphere Count")
       .onChange((v: number) => {
         this.sphereTransformParams.sphereCount = v;
@@ -291,7 +292,8 @@ export class Renderer {
       this.device,
       this.setupDevice.format,
       this.transformSystem.getBuffer(),
-      this.sphereTransform
+      this.sphereTransform,
+      this.density
     );
     this.renderPipeline.init();
 

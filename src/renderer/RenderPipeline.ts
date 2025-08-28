@@ -1,6 +1,7 @@
 import shader from "../shaders/shader.wgsl";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
+import { Density } from "../core/Density";
 
 export class RenderPipeline {
   private device: GPUDevice;
@@ -10,19 +11,22 @@ export class RenderPipeline {
   private bindGroupLayout: GPUBindGroupLayout;
   private sphereInstance: SphereInstance;
   private sphereTransform: SphereTransform;
+  private density: Density;
   private transformBuffer: GPUBuffer;
 
   constructor(
     device: GPUDevice,
     format: GPUTextureFormat,
     transformBuffer: GPUBuffer,
-    sphereTransform: SphereTransform
+    sphereTransform: SphereTransform,
+    density: Density
   ) {
     this.device = device;
     this.format = format;
     this.sphereInstance = new SphereInstance(device);
     this.transformBuffer = transformBuffer;
     this.sphereTransform = sphereTransform;
+    this.density = density;
   }
 
   public init() {
@@ -42,6 +46,11 @@ export class RenderPipeline {
           binding: 2,
           visibility: GPUShaderStage.VERTEX,
           buffer: { type: "read-only-storage" }, //velocity
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: { type: "read-only-storage" }, //density
         },
       ],
     });
@@ -88,6 +97,10 @@ export class RenderPipeline {
         {
           binding: 2,
           resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+        {
+          binding: 3,
+          resource: { buffer: this.density.getDensityBuffer() },
         },
       ],
     });
