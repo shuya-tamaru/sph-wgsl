@@ -16,48 +16,22 @@ const MAX_SPEED: f32 = 10.0;
 @group(0) @binding(0) var<uniform> transformUBO: TransformData;
 @group(0) @binding(1) var<storage, read> positions: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read> velocities: array<vec4<f32>>; 
+@group(0) @binding(3) var<storage, read> densities: array<f32>;
 
-fn velocity_to_color(velocity: vec3<f32>) -> vec3<f32> {
-  let speed = length(velocity);
-
-  let t = clamp(speed / MAX_SPEED, 0.0, 1.0);
-
-  // 0.0: 青, 0.25: シアン, 0.5: 緑, 0.75: 黄, 1.0: 赤
-  if (t < 0.25) {
-    // 青→シアン
-    let k = t / 0.25;
-    return mix(vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), k);
-  } else if (t < 0.5) {
-    // シアン→緑
-    let k = (t - 0.25) / 0.25;
-    return mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(0.0, 1.0, 0.0), k);
-  } else if (t < 0.75) {
-    // 緑→黄
-    let k = (t - 0.5) / 0.25;
-    return mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), k);
-  } else {
-    // 黄→赤
-    let k = (t - 0.75) / 0.25;
-    return mix(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), k);
-  }
-}
 fn velocity_to_color_ocean(velocity: vec3<f32>) -> vec3<f32> {
   let speed = length(velocity);
 
-  // 波の色: 深い青→青緑→白
-  // 0.0: 深い青, 0.5: 青緑, 1.0: 白
   let t = clamp(speed / MAX_SPEED, 0.0, 1.0);
 
-  if (t < 0.5) {
-    // 深い青 (0.0, 0.2, 0.6) → 青緑 (0.0, 0.7, 0.8)
-    let k = t / 0.5;
-    return mix(vec3<f32>(0.0, 0.2, 0.6), vec3<f32>(0.0, 0.7, 0.8), k);
+  if (t < 0.7) {
+    let k = t / 0.7;
+    return mix(vec3<f32>(0.0, 0.1, 0.4), vec3<f32>(0.0, 0.6, 0.8), k);
   } else {
-    // 青緑 (0.0, 0.7, 0.8) → 白 (1.0, 1.0, 1.0)
-    let k = (t - 0.5) / 0.5;
-    return mix(vec3<f32>(0.0, 0.7, 0.8), vec3<f32>(1.0, 1.0, 1.0), k);
+    let k = (t - 0.7) / 0.3;
+    return mix(vec3<f32>(0.0, 0.6, 0.8), vec3<f32>(1.0, 1.0, 1.0), k);
   }
 }
+
 
 
 
@@ -72,24 +46,19 @@ fn vs_main(
   let worldPos = center.xyz + vertPos.xyz * RADIUS;
   let mvp = transformUBO.projection * transformUBO.view * transformUBO.model;
   output.position = mvp * vec4<f32>(worldPos, 1.0);
-  // 法線ベクトルを計算（球の中心から頂点への方向）
   let normal = normalize(vertPos.xyz);
 
-  // 簡易的なディレクショナルライト
   let lightDir = normalize(vec3<f32>(0.3, 1.0, 0.5)); // 上から斜め
   let lightColor = vec3<f32>(1.0, 1.0, 1.0);
-  let ambient = 0.1;
+  let ambient = 0.5;
 
-  // Lambert拡散反射
   let diff = max(dot(normal, lightDir), 0.0);
 
-   let baseColor = velocity_to_color_ocean(velocity.xyz);
-   let speed = length(velocity.xyz);
-   let t = clamp(speed * 2.0 + 2.0 / MAX_SPEED, 0.0, 1.0);
-   let emissive = baseColor * (EMISSIVE_GAIN * smoothstep(0.4, 1.0, t));
+  let baseColor = velocity_to_color_ocean(velocity.xyz);
+  let speed = length(velocity.xyz);
+  let t = clamp(speed * 1.5 + 1.0 / MAX_SPEED, 0.0, 1.0);
+  let emissive = baseColor * (EMISSIVE_GAIN * 0.4 * smoothstep(0.6, 1.0, t));
 
-  // シェーディング色
-  // let baseColor = vec3<f32>(0.0, 0.0, 1.0);
   let shaded = baseColor * (ambient + diff * 0.8);
 
 

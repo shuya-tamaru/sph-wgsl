@@ -1,32 +1,36 @@
 import shader from "../shaders/shader.wgsl";
 import { SphereInstance } from "../core/SphereInstance";
 import { SphereTransform } from "../core/SphereTransform";
+import { Density } from "../core/Density";
 
 export class RenderPipeline {
   private device: GPUDevice;
   private format: GPUTextureFormat;
 
   private pipeline: GPURenderPipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
   private sphereInstance: SphereInstance;
   private sphereTransform: SphereTransform;
+  private density: Density;
   private transformBuffer: GPUBuffer;
 
   constructor(
     device: GPUDevice,
     format: GPUTextureFormat,
     transformBuffer: GPUBuffer,
-    sphereTransform: SphereTransform
+    sphereTransform: SphereTransform,
+    density: Density
   ) {
     this.device = device;
     this.format = format;
     this.sphereInstance = new SphereInstance(device);
     this.transformBuffer = transformBuffer;
     this.sphereTransform = sphereTransform;
+    this.density = density;
   }
 
   public init() {
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -43,29 +47,16 @@ export class RenderPipeline {
           visibility: GPUShaderStage.VERTEX,
           buffer: { type: "read-only-storage" }, //velocity
         },
-      ],
-    });
-
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: [
         {
-          binding: 0,
-          resource: { buffer: this.transformBuffer },
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.sphereTransform.positionBuffer },
-        },
-        {
-          binding: 2,
-          resource: { buffer: this.sphereTransform.velocityBuffer },
+          binding: 3,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: { type: "read-only-storage" }, //density
         },
       ],
     });
 
     const pipelineLayout = this.device.createPipelineLayout({
-      bindGroupLayouts: [bindGroupLayout],
+      bindGroupLayouts: [this.bindGroupLayout],
     });
 
     this.pipeline = this.device.createRenderPipeline({
@@ -91,11 +82,35 @@ export class RenderPipeline {
     });
   }
 
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: this.transformBuffer },
+        },
+        {
+          binding: 1,
+          resource: { buffer: this.sphereTransform.positionBufferIn },
+        },
+        {
+          binding: 2,
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+        {
+          binding: 3,
+          resource: { buffer: this.density.getDensityBuffer() },
+        },
+      ],
+    });
+  }
+
   draw(pass: GPURenderPassEncoder) {
     pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.setVertexBuffer(0, this.sphereInstance.getVertexBuffer());
     pass.setIndexBuffer(this.sphereInstance.getIndexBuffer(), "uint16");
-    pass.setBindGroup(0, this.bindGroup);
     pass.drawIndexed(
       this.sphereInstance.getIndexCount(),
       this.sphereTransform.sphereCount

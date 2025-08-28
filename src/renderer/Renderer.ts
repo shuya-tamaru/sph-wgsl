@@ -16,6 +16,11 @@ import { RenderTarget } from "./RenderTarget";
 import { SetupDevice } from "./SetupDevice";
 import { TransformSystem } from "./TransformSystem";
 import { WireBox } from "./WireBox";
+import { Grid } from "../core/Grid";
+import { CalcStartIndices } from "../core/CalcStartIndices";
+import { Scatter } from "../core/Scatter";
+import { ReOrder } from "../core/ReOrder";
+import { Swap } from "../core/Swap";
 
 export class Renderer {
   canvas: HTMLCanvasElement;
@@ -32,6 +37,12 @@ export class Renderer {
   orbitControls: OrbitControls;
   sphereInstance: SphereInstance;
   sphereTransform: SphereTransform;
+
+  grid: Grid;
+  calcStartIndices: CalcStartIndices;
+  scatter: Scatter;
+  reOrder: ReOrder;
+  swap: Swap;
 
   sphSettings: SphSettings;
   gravity: Gravity;
@@ -93,13 +104,15 @@ export class Renderer {
       this.transformSystem.getBuffer(),
       this.sphereTransform
     );
+    this.createOptimizeInstance();
     this.createSphInstance();
     // Create and initialize render pipeline
     this.renderPipeline = new RenderPipeline(
       this.device,
       this.setupDevice.format,
       this.transformSystem.getBuffer(),
-      this.sphereTransform
+      this.sphereTransform,
+      this.density
     );
     this.renderPipeline.init();
 
@@ -145,12 +158,43 @@ export class Renderer {
         });
       });
     this.gui
-      .add(this.sphereTransformParams, "sphereCount", 5000, 15000, 5000)
+      .add(this.sphereTransformParams, "sphereCount", 5000, 30000, 5000)
       .name("Sphere Count")
       .onChange((v: number) => {
         this.sphereTransformParams.sphereCount = v;
         this.resetSimulation();
       });
+  }
+
+  private createOptimizeInstance() {
+    this.grid = new Grid(
+      this.device,
+      this.sphSettings.h,
+      this.sphereTransform,
+      this.sphereTransform.positionBufferIn
+    );
+    this.calcStartIndices = new CalcStartIndices(
+      this.device,
+      this.grid.gridCountBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.totalCellCount
+    );
+    this.scatter = new Scatter(
+      this.device,
+      this.grid.cellIndicesBuffer,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.sphereTransform.transformParamsBuffer,
+      this.sphereTransform.sphereCount,
+      this.grid.totalCellCount
+    );
+    this.reOrder = new ReOrder(this.device, this.sphereTransform, this.scatter);
+    this.swap = new Swap(this.device, this.sphereTransform);
+  }
+
+  private destroyOptimizeInstance() {
+    this.grid.destroy();
+    this.calcStartIndices.destroy();
+    this.scatter.destroy();
   }
 
   private createSphInstance() {
@@ -162,7 +206,11 @@ export class Renderer {
     this.density = new Density(
       this.device,
       this.sphereTransform,
-      this.sphSettings
+      this.sphSettings,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.pressure = new Pressure(
       this.device,
@@ -175,13 +223,21 @@ export class Renderer {
       this.sphereTransform,
       this.density.getDensityBuffer(),
       this.pressure.getPressureBuffer(),
-      this.sphSettings
+      this.sphSettings,
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.viscosity = new Viscosity(
       this.device,
       this.sphereTransform,
       this.sphSettings,
-      this.density.getDensityBuffer()
+      this.density.getDensityBuffer(),
+      this.calcStartIndices.cellStartIndicesBuffer,
+      this.grid.cellCountsBuffer,
+      this.grid.gridCountBuffer,
+      this.grid.gridSizeBuffer
     );
     this.integrate = new Integrate(
       this.device,
@@ -191,6 +247,13 @@ export class Renderer {
       this.viscosity,
       this.timestamp
     );
+  }
+
+  private destroySphInstance() {
+    this.density.destroy();
+    this.pressure.destroy();
+    this.pressureForce.destroy();
+    this.viscosity.destroy();
   }
 
   private handleResize() {
@@ -209,6 +272,7 @@ export class Renderer {
     // 既存のSPHコンポーネントを破棄
     if (this.sphereTransform) {
       // 新しい球体数でSphereTransformを再作成
+      this.sphereTransform.destroy();
       this.sphereTransform = new SphereTransform(
         this.device,
         this.sphereTransformParams.boxWidth,
@@ -217,23 +281,21 @@ export class Renderer {
         this.sphereTransformParams.sphereCount
       );
     }
-    // SPHコンポーネントを再作成
+
+    this.destroyOptimizeInstance();
+    this.destroySphInstance();
+
+    this.createOptimizeInstance();
     this.createSphInstance();
     // レンダリングパイプラインを更新
     this.renderPipeline = new RenderPipeline(
       this.device,
       this.setupDevice.format,
       this.transformSystem.getBuffer(),
-      this.sphereTransform
+      this.sphereTransform,
+      this.density
     );
     this.renderPipeline.init();
-
-    // WireBoxのサイズも更新
-    this.wireBox.setSize({
-      w: this.sphereTransformParams.boxWidth,
-      h: this.sphereTransformParams.boxHeight,
-      d: this.sphereTransformParams.boxDepth,
-    });
 
     // タイムスタンプをリセット（最初のフレームから開始）
     this.timestamp.set(0.01);
@@ -273,7 +335,7 @@ export class Renderer {
     );
   }
 
-  render = () => {
+  render = async () => {
     const dt = 0.025;
     this.timestamp.set(dt);
 
@@ -285,7 +347,14 @@ export class Renderer {
     const commandEncoder: GPUCommandEncoder =
       this.device.createCommandEncoder();
 
-    //compute sph
+    this.grid.resetCellCounts();
+    this.scatter.resetCellOffsets();
+    this.grid.buildIndex(commandEncoder);
+    this.calcStartIndices.buildIndex(commandEncoder);
+    this.scatter.buildIndex(commandEncoder);
+    this.reOrder.buildIndex(commandEncoder);
+    this.swap.buildIndex(commandEncoder);
+    // //compute sph
     this.gravity.buildIndex(commandEncoder);
     this.density.buildIndex(commandEncoder);
     this.pressure.buildIndex(commandEncoder);
@@ -312,16 +381,17 @@ export class Renderer {
     //debug
     // this.device.queue
     //   .onSubmittedWorkDone()
-    //   .then(() => this.debug(this.device, this.viscosity));
+    //   .then(() => this.debug(this.device, this.pressureForce));
   };
 
-  async debug(device: GPUDevice, p: Viscosity) {
+  async debug(device: GPUDevice, p: PressureForce) {
     const result = await debugReadBuffer(
       this.device,
-      this.viscosity.getViscosityBuffer(),
-      this.sphereTransform.sphereCount * 4 * 4
+      p.getPressureForceBuffer(),
+      this.sphereTransform.sphereCount * 4
     );
 
+    //floatかunitか注意
     const float32View = new Float32Array(result);
     console.log(float32View);
   }

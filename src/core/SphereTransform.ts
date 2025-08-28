@@ -2,10 +2,11 @@ export class SphereTransform {
   private device: GPUDevice;
   public positions: Float32Array;
   public velocities: Float32Array; // 速度データ（SPH法/重力シミュレーション用）
-  public colors: Float32Array;
 
-  public positionBuffer: GPUBuffer;
-  public velocityBuffer: GPUBuffer;
+  public positionBufferIn: GPUBuffer;
+  public velocityBufferIn: GPUBuffer;
+  public positionBufferOut: GPUBuffer;
+  public velocityBufferOut: GPUBuffer;
   public transformParamsBuffer: GPUBuffer;
 
   public boxWidth: number;
@@ -55,7 +56,7 @@ export class SphereTransform {
     }
   }
   createBuffer() {
-    this.positionBuffer = this.device.createBuffer({
+    this.positionBufferIn = this.device.createBuffer({
       size: this.positions.byteLength,
       usage:
         GPUBufferUsage.COPY_DST |
@@ -63,11 +64,13 @@ export class SphereTransform {
         GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
-    new Float32Array(this.positionBuffer.getMappedRange()).set(this.positions);
-    this.positionBuffer.unmap();
+    new Float32Array(this.positionBufferIn.getMappedRange()).set(
+      this.positions
+    );
+    this.positionBufferIn.unmap();
 
     // velocityBufferは初期値全部0
-    this.velocityBuffer = this.device.createBuffer({
+    this.velocityBufferIn = this.device.createBuffer({
       size: this.velocities.byteLength,
       usage:
         GPUBufferUsage.COPY_DST |
@@ -75,13 +78,33 @@ export class SphereTransform {
         GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
-    new Float32Array(this.velocityBuffer.getMappedRange()).set(
+    new Float32Array(this.velocityBufferIn.getMappedRange()).set(
       this.velocities.fill(0)
     );
-    this.velocityBuffer.unmap();
+    this.velocityBufferIn.unmap();
+
+    this.positionBufferOut = this.device.createBuffer({
+      size: this.positions.byteLength,
+      usage:
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_SRC,
+      mappedAtCreation: true,
+    });
+    this.positionBufferOut.unmap();
+
+    this.velocityBufferOut = this.device.createBuffer({
+      size: this.velocities.byteLength,
+      usage:
+        GPUBufferUsage.COPY_DST |
+        GPUBufferUsage.STORAGE |
+        GPUBufferUsage.COPY_SRC,
+      mappedAtCreation: true,
+    });
+    this.velocityBufferOut.unmap();
 
     this.transformParamsBuffer = this.device.createBuffer({
-      size: 256,
+      size: 16,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
     const transformParamsArray = new ArrayBuffer(16);
@@ -118,8 +141,15 @@ export class SphereTransform {
     this.sphereCount = count;
     this.positions = new Float32Array(this.sphereCount * 4);
     this.velocities = new Float32Array(this.sphereCount * 4);
-    this.colors = new Float32Array(this.sphereCount * 4);
     this.createTransformData();
     this.createBuffer();
+  }
+
+  destroy() {
+    this.positionBufferIn.destroy();
+    this.velocityBufferIn.destroy();
+    this.positionBufferOut.destroy();
+    this.velocityBufferOut.destroy();
+    this.transformParamsBuffer.destroy();
   }
 }

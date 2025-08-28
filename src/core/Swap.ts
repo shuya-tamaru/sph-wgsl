@@ -1,60 +1,64 @@
-import gravityShader from "../shaders/gravity.wgsl";
 import { SphereTransform } from "./SphereTransform";
+import swapShader from "../shaders/swap.wgsl";
 
-export class Gravity {
+export class Swap {
   private device: GPUDevice;
   private sphereTransform: SphereTransform;
-  private timeStepBuffer: GPUBuffer;
 
   private pipeline: GPUComputePipeline;
-  private bindGroupLayout: GPUBindGroupLayout; // ← layout は固定で持つ
+  private bindGroupLayout: GPUBindGroupLayout;
 
-  constructor(
-    device: GPUDevice,
-    sphereTransform: SphereTransform,
-    timeStepBuffer: GPUBuffer
-  ) {
+  constructor(device: GPUDevice, sphereTransform: SphereTransform) {
     this.device = device;
     this.sphereTransform = sphereTransform;
-    this.timeStepBuffer = timeStepBuffer;
+
     this.initPipelineAndBuffers();
   }
 
   private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
-      code: gravityShader,
+      code: swapShader,
     });
-
     this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBuffer
+          buffer: { type: "read-only-storage" }, // positionsBufferOut
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // velocitiesBuffer
+          buffer: { type: "read-only-storage" }, // velocitiesBufferOut
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // timeStepBuffer
+          buffer: { type: "storage" }, // positionsBufferIn
         },
         {
           binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "storage" }, // velocitiesBufferIn
+        },
+        {
+          binding: 4,
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "uniform" }, // transformParams
         },
       ],
     });
 
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [this.bindGroupLayout],
+    });
+
     this.pipeline = this.device.createComputePipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [this.bindGroupLayout],
-      }),
-      compute: { module, entryPoint: "cs_main" },
+      layout: pipelineLayout,
+      compute: {
+        module: module,
+        entryPoint: "cs_main",
+      },
     });
   }
 
@@ -64,15 +68,22 @@ export class Gravity {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.sphereTransform.positionBufferIn },
+          resource: { buffer: this.sphereTransform.positionBufferOut },
         },
         {
           binding: 1,
-          resource: { buffer: this.sphereTransform.velocityBufferIn },
+          resource: { buffer: this.sphereTransform.velocityBufferOut },
         },
-        { binding: 2, resource: { buffer: this.timeStepBuffer } },
+        {
+          binding: 2,
+          resource: { buffer: this.sphereTransform.positionBufferIn },
+        },
         {
           binding: 3,
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+        {
+          binding: 4,
           resource: { buffer: this.sphereTransform.transformParamsBuffer },
         },
       ],
@@ -85,9 +96,5 @@ export class Gravity {
     pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereTransform.sphereCount / 64));
     pass.end();
-  }
-
-  getVelocityBuffer() {
-    return this.sphereTransform.velocityBufferOut;
   }
 }

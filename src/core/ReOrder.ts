@@ -1,17 +1,11 @@
-import { TimeStep } from "../utils/TimeStep";
-import { PressureForce } from "./PressureForce";
+import reorderShader from "../shaders/reorder.wgsl";
+import { Scatter } from "./Scatter";
 import { SphereTransform } from "./SphereTransform";
-import { SphSettings } from "./SphSettings";
-import integrateShader from "../shaders/integrate.wgsl";
-import { Viscosity } from "./Viscosity";
 
-export class Integrate {
+export class ReOrder {
   private device: GPUDevice;
   private sphereTransform: SphereTransform;
-  private sphSettings: SphSettings;
-  private pressureForce: PressureForce;
-  private viscosity: Viscosity;
-  private timestamp: TimeStep;
+  private scatter: Scatter;
 
   private pipeline: GPUComputePipeline;
   private bindGroupLayout: GPUBindGroupLayout;
@@ -19,23 +13,18 @@ export class Integrate {
   constructor(
     device: GPUDevice,
     sphereTransform: SphereTransform,
-    sphSettings: SphSettings,
-    pressureForce: PressureForce,
-    viscosity: Viscosity,
-    timestamp: TimeStep
+    scatter: Scatter
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
-    this.sphSettings = sphSettings;
-    this.pressureForce = pressureForce;
-    this.viscosity = viscosity;
-    this.timestamp = timestamp;
+    this.scatter = scatter;
+
     this.initPipelineAndBuffers();
   }
 
   private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
-      code: integrateShader,
+      code: reorderShader,
     });
 
     this.bindGroupLayout = this.device.createBindGroupLayout({
@@ -43,37 +32,32 @@ export class Integrate {
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // positionsBuffer
+          buffer: { type: "read-only-storage" }, // positionsBufferIn
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "storage" }, // velocitiesBuffer
+          buffer: { type: "read-only-storage" }, // velocitiesBufferIn
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // pressureForces
+          buffer: { type: "storage" }, // positionsBufferOut
         },
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "read-only-storage" }, // viscositiesBuffer
+          buffer: { type: "storage" }, // velocitiesBufferOut
         },
         {
           binding: 4,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // sphereTransformParamsBuffer
+          buffer: { type: "read-only-storage" }, // gridSphereIdsBuffer
         },
         {
           binding: 5,
           visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // integrateParamsBuffer
-        },
-        {
-          binding: 6,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: { type: "uniform" }, // timeStepBuffer
+          buffer: { type: "uniform" }, // transformParamsBuffer
         },
       ],
     });
@@ -90,13 +74,30 @@ export class Integrate {
     return this.device.createBindGroup({
       layout: this.bindGroupLayout,
       entries: [
-        { binding: 0, resource: this.sphereTransform.positionBufferIn },
-        { binding: 1, resource: this.sphereTransform.velocityBufferIn },
-        { binding: 2, resource: this.pressureForce.getPressureForceBuffer() },
-        { binding: 3, resource: this.viscosity.getViscosityBuffer() },
-        { binding: 4, resource: this.sphereTransform.transformParamsBuffer },
-        { binding: 5, resource: this.sphSettings.integrateParamsBuffer },
-        { binding: 6, resource: this.timestamp.getBuffer() },
+        {
+          binding: 0,
+          resource: { buffer: this.sphereTransform.positionBufferIn },
+        },
+        {
+          binding: 1,
+          resource: { buffer: this.sphereTransform.velocityBufferIn },
+        },
+        {
+          binding: 2,
+          resource: { buffer: this.sphereTransform.positionBufferOut },
+        },
+        {
+          binding: 3,
+          resource: { buffer: this.sphereTransform.velocityBufferOut },
+        },
+        {
+          binding: 4,
+          resource: { buffer: this.scatter.gridSphereIdsBuffer },
+        },
+        {
+          binding: 5,
+          resource: { buffer: this.sphereTransform.transformParamsBuffer },
+        },
       ],
     });
   }

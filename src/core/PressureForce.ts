@@ -10,25 +10,38 @@ export class PressureForce {
   private densityBuffer: GPUBuffer;
   private pressureBuffer: GPUBuffer;
 
+  private cellStartIndicesBuffer: GPUBuffer;
+  private cellCountsBuffer: GPUBuffer;
+  private gridCountBuffer: GPUBuffer;
+  private gridSizeParams: GPUBuffer;
+
   private pipeline: GPUComputePipeline;
-  private bindGroup: GPUBindGroup;
+  private bindGroupLayout: GPUBindGroupLayout;
 
   constructor(
     device: GPUDevice,
     sphereTransform: SphereTransform,
     densityBuffer: GPUBuffer,
     pressureBuffer: GPUBuffer,
-    sphSettings: SphSettings
+    sphSettings: SphSettings,
+    cellStartIndicesBuffer: GPUBuffer,
+    cellCountsBuffer: GPUBuffer,
+    gridCountBuffer: GPUBuffer,
+    gridSizeParams: GPUBuffer
   ) {
     this.device = device;
     this.sphereTransform = sphereTransform;
     this.densityBuffer = densityBuffer;
     this.pressureBuffer = pressureBuffer;
     this.sphSettings = sphSettings;
-    this.init();
+    this.cellStartIndicesBuffer = cellStartIndicesBuffer;
+    this.cellCountsBuffer = cellCountsBuffer;
+    this.gridCountBuffer = gridCountBuffer;
+    this.gridSizeParams = gridSizeParams;
+    this.initPipelineAndBuffers();
   }
 
-  private init() {
+  private initPipelineAndBuffers() {
     const module = this.device.createShaderModule({
       code: pressureForceShader,
     });
@@ -41,7 +54,7 @@ export class PressureForce {
         GPUBufferUsage.COPY_SRC,
     });
 
-    const bindGroupLayout = this.device.createBindGroupLayout({
+    this.bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
@@ -73,31 +86,47 @@ export class PressureForce {
           visibility: GPUShaderStage.COMPUTE,
           buffer: { type: "storage" }, // pressureForceBuffer
         },
+        {
+          binding: 6,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellStart
+        {
+          binding: 7,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "read-only-storage" },
+        }, // cellCounts
+        {
+          binding: 8,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridParams
+        {
+          binding: 9,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: "uniform" },
+        }, // gridSizeParams
       ],
     });
 
     this.pipeline = this.device.createComputePipeline({
       layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout],
+        bindGroupLayouts: [this.bindGroupLayout],
       }),
       compute: { module, entryPoint: "cs_main" },
     });
+  }
 
-    this.bindGroup = this.device.createBindGroup({
-      layout: bindGroupLayout,
+  private makeBindGroup(): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.bindGroupLayout,
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.sphereTransform.positionBuffer },
+          resource: { buffer: this.sphereTransform.positionBufferIn },
         },
-        {
-          binding: 1,
-          resource: { buffer: this.densityBuffer },
-        },
-        {
-          binding: 2,
-          resource: { buffer: this.pressureBuffer },
-        },
+        { binding: 1, resource: { buffer: this.densityBuffer } },
+        { binding: 2, resource: { buffer: this.pressureBuffer } },
         {
           binding: 3,
           resource: { buffer: this.sphereTransform.transformParamsBuffer },
@@ -106,10 +135,11 @@ export class PressureForce {
           binding: 4,
           resource: { buffer: this.sphSettings.pressureForceParamsBuffer },
         },
-        {
-          binding: 5,
-          resource: { buffer: this.pressureForceBuffer },
-        },
+        { binding: 5, resource: { buffer: this.pressureForceBuffer } },
+        { binding: 6, resource: { buffer: this.cellStartIndicesBuffer } },
+        { binding: 7, resource: { buffer: this.cellCountsBuffer } },
+        { binding: 8, resource: { buffer: this.gridCountBuffer } },
+        { binding: 9, resource: { buffer: this.gridSizeParams } },
       ],
     });
   }
@@ -117,12 +147,16 @@ export class PressureForce {
   buildIndex(encoder: GPUCommandEncoder) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    pass.setBindGroup(0, this.makeBindGroup());
     pass.dispatchWorkgroups(Math.ceil(this.sphereTransform.sphereCount / 64));
     pass.end();
   }
 
   getPressureForceBuffer() {
     return this.pressureForceBuffer;
+  }
+
+  destroy() {
+    this.pressureForceBuffer.destroy();
   }
 }
