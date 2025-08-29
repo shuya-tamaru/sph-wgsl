@@ -164,7 +164,7 @@ export class Renderer {
         });
       });
     this.gui
-      .add(this.sphereTransformParams, "sphereCount", 5000, 30000, 5000)
+      .add(this.sphereTransformParams, "sphereCount", 5000, 40000, 5000)
       .name("Sphere Count")
       .onChange((v: number) => {
         this.sphereTransformParams.sphereCount = v;
