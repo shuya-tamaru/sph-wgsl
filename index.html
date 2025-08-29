@@ -107,6 +107,126 @@
         left: 0;
         color: #ffd700;
       }
+
+      /* モバイルデバイス向けのレスポンシブ対応 */
+      @media (max-width: 768px) {
+        #error-container {
+          padding: 1rem;
+          justify-content: flex-start;
+          padding-top: 2rem;
+        }
+
+        .error-icon {
+          font-size: 3rem;
+          margin-bottom: 0.8rem;
+        }
+
+        .error-title {
+          font-size: 1.5rem;
+          margin-bottom: 0.8rem;
+        }
+
+        .error-message {
+          font-size: 1rem;
+          line-height: 1.5;
+          margin-bottom: 1.5rem;
+          padding: 0 0.5rem;
+        }
+
+        .error-suggestions {
+          padding: 1rem;
+          margin: 0 0.5rem;
+          border-radius: 8px;
+        }
+
+        .error-suggestions h3 {
+          font-size: 1.1rem;
+          margin-bottom: 0.8rem;
+        }
+
+        .error-suggestions li {
+          font-size: 0.95rem;
+          margin-bottom: 0.4rem;
+          padding-left: 1.2rem;
+        }
+      }
+
+      /* 小さいスマートフォン向け */
+      @media (max-width: 480px) {
+        #error-container {
+          padding: 0.8rem;
+          padding-top: 1.5rem;
+        }
+
+        .error-icon {
+          font-size: 2.5rem;
+          margin-bottom: 0.6rem;
+        }
+
+        .error-title {
+          font-size: 1.3rem;
+          margin-bottom: 0.6rem;
+        }
+
+        .error-message {
+          font-size: 0.9rem;
+          margin-bottom: 1.2rem;
+          padding: 0 0.3rem;
+        }
+
+        .error-suggestions {
+          padding: 0.8rem;
+          margin: 0 0.3rem;
+        }
+
+        .error-suggestions h3 {
+          font-size: 1rem;
+          margin-bottom: 0.6rem;
+        }
+
+        .error-suggestions li {
+          font-size: 0.85rem;
+          margin-bottom: 0.3rem;
+          padding-left: 1rem;
+        }
+      }
+
+      /* 横画面（ランドスケープ）モード対応 */
+      @media (max-height: 500px) and (orientation: landscape) {
+        #error-container {
+          padding: 1rem;
+          justify-content: center;
+        }
+
+        .error-icon {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .error-title {
+          font-size: 1.2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .error-message {
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+        }
+
+        .error-suggestions {
+          padding: 0.8rem;
+        }
+
+        .error-suggestions h3 {
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .error-suggestions li {
+          font-size: 0.8rem;
+          margin-bottom: 0.2rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -133,7 +253,5 @@
         </ul>
       </div>
     </div>
-
-    <!-- <script src="/dist/main.js"></script> -->
   </body>
 </html>

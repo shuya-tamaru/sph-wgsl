@@ -56,5 +56,11 @@ export class SetupDevice {
     if (canvas) {
       canvas.style.display = "none";
     }
+
+    // Hide GUI if it exists
+    const guiContainer = document.querySelector('.lil-gui');
+    if (guiContainer) {
+      (guiContainer as HTMLElement).style.display = "none";
+    }
   }
 }

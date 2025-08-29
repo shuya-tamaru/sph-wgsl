@@ -87,6 +87,12 @@ export class Renderer {
   }
 
   async init() {
+    // Check if WebGPU is supported before initializing GUI
+    if (!navigator.gpu) {
+      this.showWebGPUError();
+      return;
+    }
+
     this.initGui();
 
     await this.createDevice();
@@ -254,6 +260,25 @@ export class Renderer {
     this.pressure.destroy();
     this.pressureForce.destroy();
     this.viscosity.destroy();
+  }
+
+  private showWebGPUError() {
+    const errorContainer = document.getElementById("error-container");
+    if (errorContainer) {
+      errorContainer.classList.add("show");
+    }
+
+    // Hide the main canvas
+    const canvas = document.getElementById("gfx-main");
+    if (canvas) {
+      canvas.style.display = "none";
+    }
+
+    // Hide GUI if it exists
+    const guiContainer = document.querySelector('.lil-gui');
+    if (guiContainer) {
+      (guiContainer as HTMLElement).style.display = "none";
+    }
   }
 
   private handleResize() {
